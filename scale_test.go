@@ -140,10 +140,10 @@ func runWithRetries(retries int, interval time.Duration, f func() error) error {
 // will be delivered to all peers. After that we will count how many new and old
 // envelopes received by each peer.
 func (s *WhisperScaleSuite) TestSymKeyMessaging() {
-	msgNum := 10
+	msgNum := 100
 	interval := 500 * time.Millisecond
-	senderCount := 5
-	payload := make([]byte, 512)
+	senderCount := 10
+	payload := make([]byte, 150)
 	if len(s.containers) < senderCount {
 		senderCount = len(s.containers)
 	}
@@ -225,6 +225,9 @@ func (s *WhisperScaleSuite) TestSymKeyMessaging() {
 		mu.Lock()
 		reports[i].Ingress = metrics.Peer2Peer.InboundTraffic.Overall
 		reports[i].Egress = metrics.Peer2Peer.OutboundTraffic.Overall
+		reports[i].IngressAdv = metrics.Whisper.IngressAdv.Overall
+		reports[i].EgressAdv = metrics.Whisper.EgressAdv.Overall
+		reports[i].FalseAdv = metrics.Whisper.FalseAdv.Overall
 		mu.Unlock()
 		return nil
 	}))
