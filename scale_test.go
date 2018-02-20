@@ -30,15 +30,21 @@ var (
 )
 
 type containerInfo struct {
-	Name    string
-	RPC     string
-	Metrics string
+	Name      string
+	RPC       string
+	Metrics   string
+	OverlayIP string
 }
 
 func makeContainerInfos(containers []types.Container) []containerInfo {
 	whisps := []containerInfo{}
 	for _, container := range containers {
 		w := containerInfo{Name: container.Names[0]}
+		// any overlay network is fine
+		for _, net := range container.NetworkSettings.Networks {
+			w.OverlayIP = net.IPAddress
+			break
+		}
 		for _, port := range container.Ports {
 			if port.PrivatePort == 8080 {
 				w.Metrics = fmt.Sprintf("http://%s:%d/metrics", port.IP, port.PublicPort)
