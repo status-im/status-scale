@@ -13,9 +13,16 @@ type P2P struct {
 	OutboundTraffic Metric `json:"OutboundTraffic"`
 }
 
+type Whisper struct {
+	IngressAdv Metric `json:"IngressAdvertisement"`
+	EgressAdv  Metric `json:"EgressAdvertisement"`
+	FalseAdv   Metric `json:"FalseAdvertisement"`
+}
+
 // Metrics is a result of debug_metrics rpc call.
 type Metrics struct {
-	Peer2Peer P2P `json:"p2p"`
+	Peer2Peer P2P     `json:"p2p"`
+	Whisper   Whisper `json:"whisper"`
 }
 
 func getEthMetrics(url string) (rst Metrics, err error) { // nolint (deadcode)

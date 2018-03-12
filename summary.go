@@ -44,6 +44,9 @@ type Report struct {
 	OldEnvelopes float64
 	Ingress      float64
 	Egress       float64
+	IngressAdv   float64
+	EgressAdv    float64
+	FalseAdv     float64
 }
 
 // Summary is a slice of stats collected from each node.
@@ -66,13 +69,16 @@ func (s Summary) Print(w io.Writer) error {
 		newEnv    float64
 		oldEnv    float64
 		oldPerNew = s.MeanOldPerNew()
+		iadv      float64
+		eadv      float64
+		fadv      float64
 	)
 	tab := newASCIITable(w)
 	_, err := fmt.Fprintln(w, "=== SUMMARY")
 	if err != nil {
 		return err
 	}
-	if err := tab.AddHeaders("HEADERS", "ingress", "egress", "dups", "new", "dups/new"); err != nil {
+	if err := tab.AddHeaders("HEADERS", "ingress", "egress", "dups", "new", "dups/new", "iadv", "eadv", "fadv"); err != nil {
 		return err
 	}
 	for i, r := range s {
@@ -80,6 +86,9 @@ func (s Summary) Print(w io.Writer) error {
 		egress += r.Egress
 		newEnv += r.NewEnvelopes
 		oldEnv += r.OldEnvelopes
+		iadv += r.IngressAdv
+		eadv += r.EgressAdv
+		fadv += r.FalseAdv
 		if err := tab.AddRow(
 			fmt.Sprintf("%d", i),
 			fmt.Sprintf("%f mb", r.Ingress/1024/1024),
@@ -87,6 +96,9 @@ func (s Summary) Print(w io.Writer) error {
 			fmt.Sprintf("%d", int64(r.OldEnvelopes)),
 			fmt.Sprintf("%d", int64(r.NewEnvelopes)),
 			fmt.Sprintf("%f", r.OldEnvelopes/r.NewEnvelopes),
+			fmt.Sprintf("%f mb", r.IngressAdv/1024/1024),
+			fmt.Sprintf("%f mb", r.EgressAdv/1024/1024),
+			fmt.Sprintf("%d", int64(r.FalseAdv)),
 		); err != nil {
 			return err
 		}
@@ -100,6 +112,9 @@ func (s Summary) Print(w io.Writer) error {
 		fmt.Sprintf("%d", int64(oldEnv)),
 		fmt.Sprintf("%d", int64(newEnv)),
 		fmt.Sprintf("%f", oldPerNew),
+		fmt.Sprintf("%f mb", iadv/1024/1024),
+		fmt.Sprintf("%f mb", eadv/1024/1024),
+		fmt.Sprintf("%d", int64(fadv)),
 	); err != nil {
 		return err
 	}
