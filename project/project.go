@@ -44,11 +44,9 @@ func New(fullpath, name string, client *client.Client) Project {
 // Up runs docker-compose up with options and waits till containers are running.
 func (p Project) Up(opts UpOpts) error {
 	args := []string{"-f", p.Path, "up", "-d"}
-	if len(opts.Scale) > 0 {
+	for service, value := range opts.Scale {
 		args = append(args, "--scale")
-		for service, value := range opts.Scale {
-			args = append(args, fmt.Sprintf("%s=%d", service, value))
-		}
+		args = append(args, fmt.Sprintf("%s=%d", service, value))
 	}
 	cmd := exec.Command("docker-compose", args...) // nolint (gas)
 	out, err := cmd.CombinedOutput()
