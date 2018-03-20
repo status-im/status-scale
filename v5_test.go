@@ -20,7 +20,7 @@ import (
 )
 
 func TestV5TopologySuite(t *testing.T) {
-	suite.Run(t, new(TopologySuite))
+	suite.Run(t, new(V5TopologySuite))
 }
 
 type V5TopologySuite struct {
@@ -75,16 +75,9 @@ func (s *V5TopologySuite) NoErrors(errors []error) {
 	}
 }
 
-// TestIdle meters discv5 network and cpu usage while peers are connected
-// but in idle state.
-func (s *V5TopologySuite) TestIdle() {
-	// checkpoint network/cpu usage before min amount of peers is reached
-	// checkpoint network/cpu usage between min and max peers
-	maxPeers := 3
-	var mu sync.Mutex
-
-	s.NoErrors(runConcurrent(s.leafs, func(i int, c containerInfo) error {
-		return runWithRetries(100, 2*time.Minute, func() (err error) {
+func waitPeersConnected(peers []containerInfo, maxPeers int) []error {
+	return runConcurrent(peers, func(i int, c containerInfo) error {
+		return runWithRetries(100, 3*time.Second, func() (err error) {
 			client, err := rpc.Dial(c.RPC)
 			if err != nil {
 				return err
@@ -93,16 +86,26 @@ func (s *V5TopologySuite) TestIdle() {
 			if err := client.CallContext(context.TODO(), &info, "admin_peers"); err != nil {
 				return err
 			}
-			for _, p := range info {
-				fmt.Println(p.ID, p.Caps)
-			}
+			fmt.Println(c.Name, len(info))
 			if len(info) == maxPeers {
 				return nil
 			}
+			if len(info) >= maxPeers {
+				return errors.New("more than max peers connected")
+			}
 			return errors.New("not enough peers connected")
 		})
-	}))
-	time.Sleep(10 * time.Minute)
+	})
+}
+
+// TestIdle meters discv5 network and cpu usage while peers are connected
+// but in idle state.
+func (s *V5TopologySuite) TestIdle() {
+	// checkpoint network/cpu usage before min amount of peers is reached
+	// checkpoint network/cpu usage between min and max peers
+	maxPeers := 3
+	var mu sync.Mutex
+	s.NoErrors(waitPeersConnected(s.leafs, maxPeers))
 	reports := make(DiscoverySummary, len(s.leafs))
 	s.NoErrors(runConcurrent(s.leafs, func(i int, w containerInfo) error {
 		metrics, err := getEthMetrics(w.RPC)
