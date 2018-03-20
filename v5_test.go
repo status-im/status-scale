@@ -45,15 +45,12 @@ func (s *V5TopologySuite) SetupTest() {
 		"v5test",
 		cli)
 	s.NoError(s.p.Up(project.UpOpts{
-		Scale: map[string]int{"central": *central, "leaf": *leaf},
+		Scale: map[string]int{"central": *central},
 		Wait:  *dockerTimeout,
 	}))
 	centrals, err := s.p.Containers(project.FilterOpts{SvcName: "central"})
 	s.Require().NoError(err)
 	s.centrals = makeContainerInfos(centrals)
-	leafs, err := s.p.Containers(project.FilterOpts{SvcName: "leaf"})
-	s.Require().NoError(err)
-	s.leafs = makeContainerInfos(leafs)
 }
 
 func (s *V5TopologySuite) TearDownTest() {
@@ -91,7 +88,7 @@ func waitPeersConnected(peers []containerInfo, maxPeers int) []error {
 				return nil
 			}
 			if len(info) >= maxPeers {
-				return errors.New("more than max peers connected")
+				return nil
 			}
 			return errors.New("not enough peers connected")
 		})
@@ -105,8 +102,19 @@ func (s *V5TopologySuite) TestIdle() {
 	// checkpoint network/cpu usage between min and max peers
 	maxPeers := 3
 	var mu sync.Mutex
+	// we will wait till central nodes tables are filled with peers information
+	s.NoErrors(waitPeersConnected(s.centrals, maxPeers))
+	s.NoError(s.p.Up(project.UpOpts{
+		Scale: map[string]int{"central": *central, "leaf": *leaf},
+		Wait:  *dockerTimeout,
+	}))
+	leafs, err := s.p.Containers(project.FilterOpts{SvcName: "leaf"})
+	s.Require().NoError(err)
+	s.leafs = makeContainerInfos(leafs)
+	before := time.Now()
 	s.NoErrors(waitPeersConnected(s.leafs, maxPeers))
 	reports := make(DiscoverySummary, len(s.leafs))
+	after := time.Now()
 	s.NoErrors(runConcurrent(s.leafs, func(i int, w containerInfo) error {
 		metrics, err := getEthMetrics(w.RPC)
 		if err != nil {
@@ -118,6 +126,7 @@ func (s *V5TopologySuite) TestIdle() {
 		mu.Unlock()
 		return nil
 	}))
+	fmt.Println(after.Sub(before).Seconds())
 	reports.Print(os.Stdout)
 }
 

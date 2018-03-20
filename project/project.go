@@ -57,6 +57,19 @@ func (p Project) Up(opts UpOpts) error {
 
 }
 
+func (p Project) Scale(opts UpOpts) error {
+	args := []string{"-f", p.Path, "scale"}
+	for service, value := range opts.Scale {
+		args = append(args, fmt.Sprintf("%s=%d", service, value))
+	}
+	cmd := exec.Command("docker-compose", args...) // nolint (gas)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New(string(out))
+	}
+	return p.wait(opts.Wait)
+}
+
 // Down runs docker-compose down.
 func (p Project) Down() error {
 	out, err := exec.Command("docker-compose", "-f", p.Path, "down").CombinedOutput() // nolint (gas)
