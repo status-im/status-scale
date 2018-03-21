@@ -18,6 +18,10 @@ import (
 	"github.com/docker/docker/client"
 )
 
+var (
+	defaultDockerTimeout = 5 * time.Second
+)
+
 // Project is a wrapper around docker-compose project.
 type Project struct {
 	Path string
@@ -102,6 +106,10 @@ func (p Project) Containers(f FilterOpts) (rst []types.Container, err error) {
 		}
 	}
 	return rst, err
+}
+
+func (p Project) RestartContainer(container string) error {
+	return p.client.ContainerRestart(context.TODO(), container, &defaultDockerTimeout)
 }
 
 func (p Project) wait(timeout time.Duration) error {

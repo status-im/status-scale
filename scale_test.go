@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -39,7 +40,11 @@ type containerInfo struct {
 func makeContainerInfos(containers []types.Container) []containerInfo {
 	whisps := []containerInfo{}
 	for _, container := range containers {
-		w := containerInfo{Name: container.Names[0]}
+		name := container.Names[0]
+		if strings.HasPrefix(name, "/") {
+			name = name[1:]
+		}
+		w := containerInfo{Name: name}
 		// any overlay network is fine
 		for _, net := range container.NetworkSettings.Networks {
 			w.OverlayIP = net.IPAddress
