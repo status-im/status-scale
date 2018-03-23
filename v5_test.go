@@ -20,7 +20,8 @@ import (
 )
 
 var (
-	rare = flag.Int("rare", 2, "rare peers that are required by leaf nodes.")
+	rare     = flag.Int("rare", 2, "rare peers that are required by leaf nodes.")
+	idleTime = flag.Duration("idle", 0, "Defines how long test will sleep after connecting with peers.")
 )
 
 func TestV5TopologySuite(t *testing.T) {
@@ -104,8 +105,8 @@ func waitPeersConnected(peers []containerInfo, minPeers int) []error {
 // but in idle state.
 func (s *V5TopologySuite) TestIdle() {
 	// we will wait till tables of central nodes are filled with peers information
-	s.NoErrors(waitPeersConnected(s.centrals, 3)) // 3 whisper peers
-	s.NoErrors(waitPeersConnected(s.rares, 3))    // 3 whisper peers
+	s.NoErrors(waitPeersConnected(s.centrals, 2)) // 2 whisper peers
+	s.NoErrors(waitPeersConnected(s.rares, 2))    // 2 whisper peers
 	s.NoError(s.p.Up(project.UpOpts{
 		Scale: map[string]int{"central": *central, "leaf": *leaf, "rare": *rare},
 		Wait:  *dockerTimeout,
@@ -132,6 +133,7 @@ func (s *V5TopologySuite) waitConnectedAndGetMetrics() {
 	before := time.Now()
 	s.NoErrors(waitPeersConnected(s.leafs, 3)) // 2 whisper + 1 mailserver
 	after := time.Now()
+	time.Sleep(*idleTime)
 	reports := make(DiscoverySummary, len(s.leafs))
 	s.NoErrors(runConcurrent(s.leafs, func(i int, w containerInfo) error {
 		metrics, err := getEthMetrics(w.RPC)
