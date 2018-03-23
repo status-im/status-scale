@@ -18,6 +18,10 @@ import (
 	"github.com/docker/docker/client"
 )
 
+var (
+	defaultDockerTimeout = 5 * time.Second
+)
+
 // Project is a wrapper around docker-compose project.
 type Project struct {
 	Path string
@@ -57,6 +61,19 @@ func (p Project) Up(opts UpOpts) error {
 
 }
 
+func (p Project) Scale(opts UpOpts) error {
+	args := []string{"-f", p.Path, "scale"}
+	for service, value := range opts.Scale {
+		args = append(args, fmt.Sprintf("%s=%d", service, value))
+	}
+	cmd := exec.Command("docker-compose", args...) // nolint (gas)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New(string(out))
+	}
+	return p.wait(opts.Wait)
+}
+
 // Down runs docker-compose down.
 func (p Project) Down() error {
 	out, err := exec.Command("docker-compose", "-f", p.Path, "down").CombinedOutput() // nolint (gas)
@@ -89,6 +106,10 @@ func (p Project) Containers(f FilterOpts) (rst []types.Container, err error) {
 		}
 	}
 	return rst, err
+}
+
+func (p Project) RestartContainer(container string) error {
+	return p.client.ContainerRestart(context.TODO(), container, &defaultDockerTimeout)
 }
 
 func (p Project) wait(timeout time.Duration) error {
