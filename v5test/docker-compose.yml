@@ -1,4 +1,4 @@
-version: "3"
+version: "3.3"
 services:
   bootnode:
     image: ethereum/client-go:alltools-latest
@@ -6,14 +6,18 @@ services:
     command: -v5 -addr=:30303 -nodekey /keys/bootnode.key
     ports:
       - 30303
-    volumes:
-      - ./:/keys/:ro
+    configs:
+      - source: key
+        target: /keys/bootnode.key
     networks:
       cluster:
         ipv4_address: 172.16.238.10
 
   central:
-    image: statusteam/status-go:latest
+    deploy:
+      mode: replicated
+      replicas: 0
+    image: yashulyak/status-go:latest
     command:
       - statusd
       - "-les=false"
@@ -22,7 +26,7 @@ services:
       - "-discovery=true"
       - "-standalone=false"
       - "-stats"
-      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@172.16.238.10:30303"
+      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@v5test_bootnode:30303"
       - "-http"
       - "-httphost=0.0.0.0"
       - "-log=DEBUG"
@@ -30,6 +34,7 @@ services:
       - "-rtopic=whisper"
       - "-stopic=whisper=2,2"
       - "-networkid=777"
+      - "-maxpeers=300"
     ports:
       - 8080
       - 8545
@@ -40,7 +45,10 @@ services:
       - bootnode
 
   rare:
-    image: statusteam/status-go:latest
+    deploy:
+      mode: replicated
+      replicas: 0
+    image: yashulyak/status-go:latest
     command:
       - statusd
       - "-les=false"
@@ -49,12 +57,13 @@ services:
       - "-discovery=true"
       - "-standalone=false"
       - "-stats"
-      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@172.16.238.10:30303"
+      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@v5test_bootnode:30303"
       - "-http"
       - "-httphost=0.0.0.0"
       - "-log=DEBUG"
       - "-metrics"
       - "-rtopic=rare"
+      - "-maxpeers=300"
       - "-stopic=whisper=2,2"
       - "-networkid=777"
     ports:
@@ -67,7 +76,10 @@ services:
       - bootnode
 
   leaf:
-    image: statusteam/status-go:latest
+    deploy:
+      mode: replicated
+      replicas: 0
+    image: yashulyak/status-go:latest
     command:
       - statusd
       - "-les=false"
@@ -77,7 +89,7 @@ services:
       - "-standalone=false"
       - "-stats"
       - "-http"
-      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@172.16.238.10:30303"
+      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@v5test_bootnode:30303"
       - "-httphost=0.0.0.0"
       - "-log=DEBUG"
       - "-metrics"
@@ -95,8 +107,9 @@ services:
 
 networks:
   cluster:
-    driver: overlay
-    ipam:
-      driver: default
-      config:
-      - subnet: 172.16.238.0/24
+    external:
+      name: cluster
+
+configs:
+  key:
+    file: ./bootnode.key
