@@ -117,20 +117,22 @@ func (s *V5TopologySuite) TestIdle() {
 	}))
 	s.NoErrors(waitPeersConnected(s.centrals, 2)) // 2 whisper peers
 	s.NoErrors(waitPeersConnected(s.rares, 2))    // 2 whisper peers
-	s.NoError(s.p.Scale(project.UpOpts{
-		Scale: map[string]int{"leaf": *leaf, "central": *central, "rare": *rare},
-		Wait:  *dockerTimeout,
-	}))
-	time.Sleep(*idle)
-	s.Require().NoError(runWithRetries(100, 1*time.Second, func() error {
-		nodes, err := s.p.Containers(project.FilterOpts{SvcName: "leaf"})
-		if err != nil {
+	chunk := *leaf / 20
+	for i := chunk; i <= *leaf; i += chunk {
+		s.NoError(s.p.Scale(project.UpOpts{
+			Scale: map[string]int{"leaf": i, "central": *central, "rare": *rare},
+			Wait:  *dockerTimeout,
+		}))
+		s.Require().NoError(runWithRetries(100, 1*time.Second, func() error {
+			nodes, err := s.p.Containers(project.FilterOpts{SvcName: "leaf"})
+			if err != nil {
+				return err
+			}
+			s.leafs, err = makeContainerInfos(s.p.Name+"_leaf", nodes)
 			return err
-		}
-		s.leafs, err = makeContainerInfos(s.p.Name+"_leaf", nodes)
-		return err
-	}))
-	s.waitConnectedAndGetMetrics(s.leafs)
+		}))
+		s.waitConnectedAndGetMetrics(s.leafs)
+	}
 	s.NoErrors(waitPeersConnected(s.centrals, 2))
 }
 
