@@ -9,9 +9,6 @@ services:
     configs:
       - source: key
         target: /keys/bootnode.key
-    networks:
-      cluster:
-        ipv4_address: 172.16.238.10
 
   central:
     deploy:
@@ -31,8 +28,8 @@ services:
       - "-httphost=0.0.0.0"
       - "-log=DEBUG"
       - "-metrics"
-      - "-rtopic=whisper"
-      - "-stopic=whisper=7,9"
+      - "-topic.register=whisper"
+      - "-topic.search=whisper=7,9"
       - "-networkid=777"
       - "-maxpeers=30"
     ports:
@@ -62,9 +59,9 @@ services:
       - "-httphost=0.0.0.0"
       - "-log=DEBUG"
       - "-metrics"
-      - "-rtopic=rare"
+      - "-topic.register=rare"
       - "-maxpeers=50"
-      - "-stopic=whisper=7,9"
+      - "-topic.search=whisper=7,9"
       - "-networkid=777"
     ports:
       - 8080
@@ -93,8 +90,8 @@ services:
       - "-httphost=0.0.0.0"
       - "-log=TRACE"
       - "-metrics"
-      - "-stopic=whisper=2,2"
-      - "-stopic=rare=1,1"
+      - "-topic.search=whisper=2,2"
+      - "-topic.search=rare=1,1"
       - "-networkid=777"
     ports:
       - 8080
