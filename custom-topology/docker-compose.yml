@@ -5,12 +5,9 @@ services:
     entrypoint: bootnode
     command: -addr=:30303 -nodekey /keys/bootnode.key
     ports:
-      - 30303
+      - 30303:30303
     volumes:
       - ./:/keys/:ro
-    networks:
-      cluster:
-        ipv4_address: 172.16.238.10
 
   central:
     image: status-go:latest
@@ -63,8 +60,5 @@ services:
 
 networks:
   cluster:
-    driver: overlay
-    ipam:
-      driver: default
-      config:
-      - subnet: 172.16.238.0/24
+    external:
+      name: cluster

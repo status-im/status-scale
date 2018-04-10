@@ -13,9 +13,16 @@ type P2P struct {
 	OutboundTraffic Metric `json:"OutboundTraffic"`
 }
 
+// Discv5 udp ingress and egress traffic from disv5 module.
+type Discv5 struct {
+	InboundTraffic  Metric `json:"InboundTraffic"`
+	OutboundTraffic Metric `json:"OutboundTraffic"`
+}
+
 // Metrics is a result of debug_metrics rpc call.
 type Metrics struct {
-	Peer2Peer P2P `json:"p2p"`
+	Peer2Peer P2P    `json:"p2p"`
+	Discv5    Discv5 `json:"discv5"`
 }
 
 func getEthMetrics(url string) (rst Metrics, err error) { // nolint (deadcode)

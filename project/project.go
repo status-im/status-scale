@@ -15,7 +15,13 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
+)
+
+var (
+	defaultDockerTimeout = 5 * time.Second
 )
 
 // Project is a wrapper around docker-compose project.
@@ -43,23 +49,31 @@ func New(fullpath, name string, client *client.Client) Project {
 
 // Up runs docker-compose up with options and waits till containers are running.
 func (p Project) Up(opts UpOpts) error {
-	args := []string{"-f", p.Path, "up", "-d"}
-	for service, value := range opts.Scale {
-		args = append(args, "--scale")
-		args = append(args, fmt.Sprintf("%s=%d", service, value))
-	}
-	cmd := exec.Command("docker-compose", args...) // nolint (gas)
+	cmd := exec.Command("docker", "stack", "deploy", "--compose-file", p.Path, p.Name) // nolint (gas)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.New(string(out))
 	}
-	return p.wait(opts.Wait)
+	return p.Scale(opts)
 
+}
+
+func (p Project) Scale(opts UpOpts) error {
+	args := []string{"service", "scale"}
+	for service, value := range opts.Scale {
+		args = append(args, fmt.Sprintf("%s_%s=%d", p.Name, service, value))
+	}
+	cmd := exec.Command("docker", args...) // nolint (gas)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New(string(out))
+	}
+	return nil
 }
 
 // Down runs docker-compose down.
 func (p Project) Down() error {
-	out, err := exec.Command("docker-compose", "-f", p.Path, "down").CombinedOutput() // nolint (gas)
+	out, err := exec.Command("docker", "stack", "rm", p.Name).CombinedOutput()
 	if err != nil {
 		return errors.New(string(out))
 	}
@@ -72,43 +86,11 @@ type FilterOpts struct {
 }
 
 // Containers queries docker for containers and filters results according to FiltersOpts.
-func (p Project) Containers(f FilterOpts) (rst []types.Container, err error) {
-	containers, err := p.client.ContainerList(context.Background(), types.ContainerListOptions{})
-	if err != nil {
-		return
-	}
-	name := p.Name
-	if len(f.SvcName) > 0 {
-		name = strings.Join([]string{p.Name, f.SvcName}, "_")
-	}
-	for _, container := range containers {
-		for _, cname := range container.Names {
-			if strings.Contains(cname, name) {
-				rst = append(rst, container)
-			}
-		}
-	}
-	return rst, err
-}
-
-func (p Project) wait(timeout time.Duration) error {
-	timer := time.After(timeout)
-	for {
-		containers, err := p.Containers(FilterOpts{})
-		if err != nil {
-			return err
-		}
-		for _, c := range containers {
-			if c.State != "running" {
-				break
-			}
-			return nil
-		}
-		time.Sleep(300 * time.Millisecond)
-		select {
-		case <-timer:
-			return errors.New("docker compose timeout")
-		default:
-		}
-	}
+func (p Project) Containers(f FilterOpts) (rst []swarm.Task, err error) {
+	args := filters.NewArgs()
+	args.Add("service", fmt.Sprintf("%s_%s", p.Name, f.SvcName))
+	args.Add("desired-state", "running")
+	return p.client.TaskList(context.TODO(), types.TaskListOptions{
+		Filters: args,
+	})
 }

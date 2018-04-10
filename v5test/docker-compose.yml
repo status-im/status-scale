@@ -1,0 +1,112 @@
+version: "3.3"
+services:
+  bootnode:
+    image: ethereum/client-go:alltools-latest
+    entrypoint: bootnode
+    command: -v5 -addr=:30303 -nodekey /keys/bootnode.key
+    ports:
+      - 30303
+    configs:
+      - source: key
+        target: /keys/bootnode.key
+
+  central:
+    deploy:
+      mode: replicated
+      replicas: 0
+    image: yashulyak/status-go:latest
+    command:
+      - statusd
+      - "-les=false"
+      - "-shh"
+      - "-listenaddr=:30303"
+      - "-discovery=true"
+      - "-standalone=false"
+      - "-stats"
+      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@v5test_bootnode:30303"
+      - "-http"
+      - "-httphost=0.0.0.0"
+      - "-log=DEBUG"
+      - "-metrics"
+      - "-topic.register=whisper"
+      - "-topic.search=whisper=7,9"
+      - "-networkid=777"
+      - "-maxpeers=30"
+    ports:
+      - 8080
+      - 8545
+      - 30303
+    networks:
+      cluster:
+    depends_on:
+      - bootnode
+
+  rare:
+    deploy:
+      mode: replicated
+      replicas: 0
+    image: yashulyak/status-go:latest
+    command:
+      - statusd
+      - "-les=false"
+      - "-shh"
+      - "-listenaddr=:30303"
+      - "-discovery=true"
+      - "-standalone=false"
+      - "-stats"
+      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@v5test_bootnode:30303"
+      - "-http"
+      - "-httphost=0.0.0.0"
+      - "-log=DEBUG"
+      - "-metrics"
+      - "-topic.register=rare"
+      - "-maxpeers=50"
+      - "-topic.search=whisper=7,9"
+      - "-networkid=777"
+    ports:
+      - 8080
+      - 8545
+      - 30303
+    networks:
+      cluster:
+    depends_on:
+      - bootnode
+
+  leaf:
+    deploy:
+      mode: replicated
+      replicas: 0
+    image: yashulyak/status-go:latest
+    command:
+      - statusd
+      - "-les=false"
+      - "-shh"
+      - "-listenaddr=:30303"
+      - "-discovery=true"
+      - "-standalone=false"
+      - "-stats"
+      - "-http"
+      - "-bootnodes=enode://3f04db09bedc8d85a198de94c84da73aa7782fafc61b28c525ec5cca5a6cc16be7ebbb5cd001780f71d8408d35a2f6326faa1e524d9d8875294172ebec988743@v5test_bootnode:30303"
+      - "-httphost=0.0.0.0"
+      - "-log=TRACE"
+      - "-metrics"
+      - "-topic.search=whisper=2,2"
+      - "-topic.search=rare=1,1"
+      - "-networkid=777"
+    ports:
+      - 8080
+      - 8545
+      - 30303
+    networks:
+      cluster:
+    depends_on:
+      - bootnode
+
+networks:
+  cluster:
+    external:
+      name: cluster
+
+configs:
+  key:
+    file: ./bootnode.key
