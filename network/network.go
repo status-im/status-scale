@@ -15,23 +15,19 @@ type Executor interface {
 	Execute(context.Context, []string) error
 }
 
-type ComcastExecutor struct {
-	Shell Executor
-}
-
-func (e ComcastExecutor) Start(ctx context.Context, options ...Options) error {
+func ComcastStart(shell Executor, ctx context.Context, options ...Options) error {
 	if len(options) == 0 {
 		return ErrorNothingToRun
 	}
 	for _, opt := range options {
-		if err := e.StartSingle(ctx, opt); err != nil {
+		if err := ComcastStartSingle(shell, ctx, opt); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (e ComcastExecutor) StartSingle(ctx context.Context, opt Options) error {
+func ComcastStartSingle(shell Executor, ctx context.Context, opt Options) error {
 	cmd := []string{"comcast"}
 	if opt.Latency != 0 {
 		cmd = append(cmd, "-latency", strconv.Itoa(opt.Latency))
@@ -45,11 +41,11 @@ func (e ComcastExecutor) StartSingle(ctx context.Context, opt Options) error {
 	if len(cmd) == 1 {
 		return ErrorNoConditions
 	}
-	return e.Shell.Execute(ctx, cmd)
+	return shell.Execute(ctx, cmd)
 }
 
-func (e ComcastExecutor) Stop(ctx context.Context, options ...Options) error {
-	return e.Shell.Execute(ctx, []string{"comcast", "-stop"})
+func ComcastStop(shell Executor, ctx context.Context, options ...Options) error {
+	return shell.Execute(ctx, []string{"comcast", "-stop"})
 }
 
 type Options struct {
