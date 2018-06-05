@@ -11,11 +11,9 @@ var (
 	ErrorNoConditions = errors.New("no condtitions")
 )
 
-type Executor interface {
-	Execute(context.Context, []string) error
-}
+type executor func(context.Context, []string) error
 
-func ComcastStart(shell Executor, ctx context.Context, options ...Options) error {
+func ComcastStart(shell executor, ctx context.Context, options ...Options) error {
 	if len(options) == 0 {
 		return ErrorNothingToRun
 	}
@@ -27,7 +25,7 @@ func ComcastStart(shell Executor, ctx context.Context, options ...Options) error
 	return nil
 }
 
-func ComcastStartSingle(shell Executor, ctx context.Context, opt Options) error {
+func ComcastStartSingle(shell executor, ctx context.Context, opt Options) error {
 	cmd := []string{"comcast"}
 	if opt.Latency != 0 {
 		cmd = append(cmd, "-latency", strconv.Itoa(opt.Latency))
@@ -41,11 +39,11 @@ func ComcastStartSingle(shell Executor, ctx context.Context, opt Options) error 
 	if len(cmd) == 1 {
 		return ErrorNoConditions
 	}
-	return shell.Execute(ctx, cmd)
+	return shell(ctx, cmd)
 }
 
-func ComcastStop(shell Executor, ctx context.Context, options ...Options) error {
-	return shell.Execute(ctx, []string{"comcast", "-stop"})
+func ComcastStop(shell executor, ctx context.Context, options ...Options) error {
+	return shell(ctx, []string{"comcast", "-stop"})
 }
 
 type Options struct {
