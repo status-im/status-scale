@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/network"
 )
@@ -21,16 +22,19 @@ func DefaultConfig() PeerConfig {
 		Host:      "0.0.0.0",
 		Port:      8545,
 		NetworkID: 100,
+		Discovery: true,
 	}
 }
 
-type PeerBackend interface {
+type Backend interface {
 	Execute(context.Context, string, []string) error
 	Create(context.Context, string, dockershim.CreateOpts) error
 	Remove(context.Context, string) error
+	CreateNetwork(context.Context, dockershim.NetOpts) (string, error)
+	RemoveNetwork(context.Context, string) error
 }
 
-func NewPeer(config PeerConfig, backend PeerBackend) Peer {
+func NewPeer(config PeerConfig, backend Backend) Peer {
 	return Peer{config.Name, config, backend}
 }
 
@@ -38,21 +42,25 @@ type PeerConfig struct {
 	Name  string
 	NetID string
 
-	Modules   []string
-	Whisper   bool
-	BootNodes []string
-	NetworkID int
-	HTTP      bool
-	Port      int
-	Host      string
-	Metrics   bool
+	Modules       []string
+	Whisper       bool
+	BootNodes     []string
+	NetworkID     int
+	HTTP          bool
+	Port          int
+	Host          string
+	Metrics       bool
+	TopicSearch   map[string]string
+	TopicRegister []string
+	Discovery     bool
+	Standalone    bool
 }
 
 type Peer struct {
 	name   string
 	config PeerConfig
 
-	backend PeerBackend
+	backend Backend
 }
 
 func (p Peer) Create(ctx context.Context) error {
@@ -78,9 +86,22 @@ func (p Peer) Create(ctx context.Context) error {
 	if len(p.config.BootNodes) != 0 {
 		cmd = append(cmd, "-bootnodes="+strings.Join(p.config.BootNodes, ","))
 	}
+	if !p.config.Standalone {
+		cmd = append(cmd, "-standalone=false")
+	}
+	if p.config.Discovery {
+		cmd = append(cmd, "-discovery=true")
+	}
 	if p.config.NetworkID != 0 {
 		cmd = append(cmd, "-networkid="+strconv.Itoa(p.config.NetworkID))
 	}
+	for _, topic := range p.config.TopicRegister {
+		cmd = append(cmd, strings.Join([]string{"-topic.register", topic}, "="))
+	}
+	for topic, args := range p.config.TopicSearch {
+		cmd = append(cmd, strings.Join([]string{"-topic.search", topic, args}, "="))
+	}
+	log.Debug("Create statusd", "name", p.name, "command", strings.Join(cmd, " "))
 	return p.backend.Create(ctx, p.name, dockershim.CreateOpts{
 		Cmd:   cmd,
 		Image: STATUSD,
@@ -91,6 +112,7 @@ func (p Peer) Create(ctx context.Context) error {
 }
 
 func (p Peer) Remove(ctx context.Context) error {
+	log.Debug("removing statusd", "name", p.name)
 	return p.backend.Remove(ctx, p.name)
 }
 

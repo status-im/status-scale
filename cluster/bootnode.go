@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 
 	"github.com/status-im/status-scale/dockershim"
@@ -20,7 +21,7 @@ type BootnodeConfig struct {
 	Network string
 }
 
-func NewBootnode(cfg BootnodeConfig, backend PeerBackend) Bootnode {
+func NewBootnode(cfg BootnodeConfig, backend Backend) Bootnode {
 	key, err := crypto.GenerateKey() // it can fail only if rand.Reader will return err on read all
 	if err != nil {
 		panic(err)
@@ -41,11 +42,12 @@ type Bootnode struct {
 	port    int
 	network string
 
-	backend PeerBackend
+	backend Backend
 	key     *ecdsa.PrivateKey
 }
 
 func (b Bootnode) Create(ctx context.Context) error {
+	log.Debug("creating bootnode", "name", b.name, "enode", b.Self().String())
 	data := hex.EncodeToString(crypto.FromECDSA(b.key))
 	return b.backend.Create(ctx, b.name, dockershim.CreateOpts{
 		Entrypoint: "bootnode",
@@ -66,6 +68,7 @@ func (b Bootnode) Self() *discv5.Node {
 }
 
 func (b Bootnode) Remove(ctx context.Context) error {
+	log.Debug("remove bootnode", "name", b.name)
 	return b.backend.Remove(ctx, b.name)
 }
 
