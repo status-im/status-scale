@@ -2,10 +2,14 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/network"
 )
@@ -20,27 +24,21 @@ func DefaultConfig() PeerConfig {
 		Metrics:   true,
 		HTTP:      true,
 		Host:      "0.0.0.0",
+		Modules:   []string{"admin", "debug", "shh", "net"},
 		Port:      8545,
 		NetworkID: 100,
 		Discovery: true,
 	}
 }
 
-type Backend interface {
-	Execute(context.Context, string, []string) error
-	Create(context.Context, string, dockershim.CreateOpts) error
-	Remove(context.Context, string) error
-	CreateNetwork(context.Context, dockershim.NetOpts) (string, error)
-	RemoveNetwork(context.Context, string) error
-}
-
 func NewPeer(config PeerConfig, backend Backend) Peer {
-	return Peer{config.Name, config, backend}
+	return Peer{name: config.Name, config: config, backend: backend}
 }
 
 type PeerConfig struct {
 	Name  string
 	NetID string
+	IP    string
 
 	Modules       []string
 	Whisper       bool
@@ -61,10 +59,13 @@ type Peer struct {
 	config PeerConfig
 
 	backend Backend
+
+	client *rpc.Client
 }
 
-func (p Peer) Create(ctx context.Context) error {
+func (p *Peer) Create(ctx context.Context) error {
 	cmd := []string{"statusd"}
+	var exposed []string
 	if p.config.Whisper {
 		cmd = append(cmd, "-shh")
 	}
@@ -75,6 +76,7 @@ func (p Peer) Create(ctx context.Context) error {
 		}
 		if p.config.Port != 0 {
 			cmd = append(cmd, "-httpport="+strconv.Itoa(p.config.Port))
+			exposed = append(exposed, strconv.Itoa(p.config.Port))
 		}
 		if len(p.config.Modules) != 0 {
 			cmd = append(cmd, "-httpmodules="+strings.Join(p.config.Modules, ","))
@@ -102,13 +104,22 @@ func (p Peer) Create(ctx context.Context) error {
 		cmd = append(cmd, strings.Join([]string{"-topic.search", topic, args}, "="))
 	}
 	log.Debug("Create statusd", "name", p.name, "command", strings.Join(cmd, " "))
-	return p.backend.Create(ctx, p.name, dockershim.CreateOpts{
+	err := p.backend.Create(ctx, p.name, dockershim.CreateOpts{
 		Cmd:   cmd,
 		Image: STATUSD,
+		Ports: exposed,
 		IPs: map[string]dockershim.IpOpts{p.config.NetID: dockershim.IpOpts{
 			NetID: p.config.NetID,
 		}},
 	})
+	if err != nil {
+		return err
+	}
+	p.client, err = p.makeRPCClient(ctx)
+	if err != nil {
+		return err
+	}
+	return p.healthcheck(ctx, 20, time.Second)
 }
 
 func (p Peer) Remove(ctx context.Context) error {
@@ -118,12 +129,48 @@ func (p Peer) Remove(ctx context.Context) error {
 
 func (p Peer) EnableConditions(ctx context.Context, opts ...network.Options) error {
 	return network.ComcastStart(func(ctx context.Context, cmd []string) error {
+		log.Debug("run command", "peer", p.name, "command", strings.Join(cmd, " "))
 		return p.backend.Execute(ctx, p.name, cmd)
 	}, ctx, opts...)
 }
 
 func (p Peer) DisableConditions(ctx context.Context, opts ...network.Options) error {
 	return network.ComcastStop(func(ctx context.Context, cmd []string) error {
+		log.Debug("run command", "peer", p.name, "command", strings.Join(cmd, " "))
 		return p.backend.Execute(ctx, p.name, cmd)
 	}, ctx, opts...)
+}
+
+func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
+	ports, err := p.backend.ConnectionInfo(ctx, p.name, p.config.Port)
+	if err != nil {
+		return nil, err
+	}
+	if len(ports) < 1 {
+		return nil, fmt.Errorf("peer %s doesn't have any bindings", p.name)
+	}
+	// can use any
+	rawurl := fmt.Sprintf("http://%s:%s", ports[0].HostIP, ports[0].HostPort)
+	log.Debug("init rpc client", "name", p.name, "url", rawurl)
+	return rpc.DialContext(ctx, rawurl)
+}
+
+func (p Peer) Admin() Admin {
+	return Admin{client: p.client}
+}
+
+func (p Peer) healthcheck(ctx context.Context, retries int, interval time.Duration) error {
+	log.Debug("running healthcheck", "peer", p.name)
+	var ignored struct{}
+	for i := retries; i > 0; i-- {
+		// use deadline?
+		err := p.client.CallContext(ctx, &ignored, "admin_nodeInfo")
+		log.Trace("healtcheck", "peer", p.name, "tries", i, "error", err)
+		if err != nil {
+			time.Sleep(interval)
+			continue
+		}
+		return nil
+	}
+	return fmt.Errorf("peer %s failed healthcheck", p.name)
 }

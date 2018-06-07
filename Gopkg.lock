@@ -75,14 +75,19 @@
     "common/math",
     "common/mclock",
     "crypto",
+    "crypto/ecies",
     "crypto/secp256k1",
     "crypto/sha3",
+    "event",
     "log",
     "metrics",
+    "p2p",
+    "p2p/discover",
     "p2p/discv5",
     "p2p/nat",
     "p2p/netutil",
-    "rlp"
+    "rlp",
+    "rpc"
   ]
   revision = "eae63c511ceafab14b92e274c1b18bf1700e2d3d"
   version = "v1.8.10"
@@ -147,6 +152,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/rs/cors"
+  packages = ["."]
+  revision = "ca016a06a5753f8ba03029c0aa5e54afb1bf713f"
+  version = "v1.4.0"
+
+[[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
   revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
@@ -181,7 +192,8 @@
     "html/atom",
     "html/charset",
     "internal/socks",
-    "proxy"
+    "proxy",
+    "websocket"
   ]
   revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
@@ -215,9 +227,21 @@
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
+[[projects]]
+  name = "gopkg.in/fatih/set.v0"
+  packages = ["."]
+  revision = "57907de300222151a123d29255ed17f5ed43fad3"
+  version = "v0.1.0"
+
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/natefinch/npipe.v2"
+  packages = ["."]
+  revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a545bc663f52b7415a5bb589eb0d72c8e398c7ee773ab8e7dd4ef10e3947ac3d"
+  inputs-digest = "80777fd3cb819d76d9d900d9d231b75a47195f071f249e0c7df6512b0106cd80"
   solver-name = "gps-cdcl"
   solver-version = 1

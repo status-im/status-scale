@@ -2,10 +2,8 @@ package cluster
 
 import (
 	"context"
-	"net"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/log"
 
@@ -89,49 +87,20 @@ func (c *Cluster) Create(ctx context.Context) error {
 	return nil
 }
 
+func (c *Cluster) GetRelay(n int) Peer {
+	return c.relays[n]
+}
+
 func (c *Cluster) Clean(ctx context.Context) {
-	for _, p := range c.relays {
-		p.Remove(ctx)
+	for i := 0; i < c.Boot; i++ {
+		c.Backend.Remove(ctx, c.getName("boot", strconv.Itoa(i)))
 	}
-	for _, p := range c.users {
-		p.Remove(ctx)
+	for i := 0; i < c.Relay; i++ {
+		c.Backend.Remove(ctx, c.getName("relay", strconv.Itoa(i)))
 	}
-	for _, b := range c.bootnodes {
-		b.Remove(ctx)
+	for i := 0; i < c.Users; i++ {
+		c.Backend.Remove(ctx, c.getName("user", strconv.Itoa(i)))
 	}
 	log.Debug("removing network", "id", c.netID, "name", c.getName("net"))
 	c.Backend.RemoveNetwork(ctx, c.netID)
-}
-
-func NewIPAM(cidr string) (*IPAM, error) {
-	_, ipnet, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return nil, err
-	}
-	return &IPAM{
-		cidr:  ipnet,
-		given: 1, // start from 2
-	}, err
-}
-
-type IPAM struct {
-	cidr *net.IPNet
-
-	mu    sync.Mutex
-	given byte
-}
-
-// FIXME this will work only for 255 first ips
-func (i *IPAM) Take() net.IP {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	new := make(net.IP, 4)
-	copy(new, i.cidr.IP)
-	i.given++
-	new[3] += i.given
-	return new
-}
-
-func (i *IPAM) String() string {
-	return i.cidr.String()
 }
