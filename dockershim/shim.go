@@ -20,6 +20,7 @@ func NewShim(client *docker.Client) DockerShim {
 	}
 }
 
+// TODO move structs to cluster pkg
 type IpOpts struct {
 	NetID string
 	IP    string

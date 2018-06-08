@@ -1,9 +1,12 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/log"
 
@@ -17,6 +20,7 @@ type Cluster struct {
 
 	Boot, Relay, Users int
 
+	mu        sync.Mutex
 	netID     string
 	bootnodes []Bootnode
 	relays    []Peer
@@ -55,6 +59,8 @@ func (c *Cluster) Create(ctx context.Context) error {
 		}
 		enodes = append(enodes, b.Self().String())
 	}
+
+	run := newRunner(c.Relay + c.Users)
 	for i := 0; i < c.Relay; i++ {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName("relay", strconv.Itoa(i))
@@ -65,10 +71,15 @@ func (c *Cluster) Create(ctx context.Context) error {
 		}
 		cfg.TopicRegister = []string{"whisper"}
 		p := NewPeer(cfg, c.Backend)
-		if err := p.Create(ctx); err != nil {
+		run.Run(func() error {
+			err := p.Create(ctx)
+			if err == nil {
+				c.mu.Lock()
+				c.relays = append(c.relays, p)
+				c.mu.Unlock()
+			}
 			return err
-		}
-		c.relays = append(c.relays, p)
+		})
 	}
 	for i := 0; i < c.Users; i++ {
 		cfg := DefaultConfig()
@@ -79,12 +90,19 @@ func (c *Cluster) Create(ctx context.Context) error {
 			"whisper": "2,3",
 		}
 		p := NewPeer(cfg, c.Backend)
-		if err := p.Create(ctx); err != nil {
+		run.Run(func() error {
+			err := p.Create(ctx)
+			if err == nil {
+				c.mu.Lock()
+				c.users = append(c.users, p)
+				c.mu.Unlock()
+			}
 			return err
-		}
-		c.users = append(c.users, p)
+		})
 	}
-	return nil
+	err = run.Error()
+	log.Debug("finished cluster deployment", "error", err)
+	return err
 }
 
 func (c *Cluster) GetRelay(n int) Peer {
@@ -103,4 +121,42 @@ func (c *Cluster) Clean(ctx context.Context) {
 	}
 	log.Debug("removing network", "id", c.netID, "name", c.getName("net"))
 	c.Backend.RemoveNetwork(ctx, c.netID)
+}
+
+func newRunner(n int) *runner {
+	r := &runner{}
+	r.wg.Add(n)
+	r.errors = make(chan error, n)
+	return r
+}
+
+type runner struct {
+	wg     sync.WaitGroup
+	errors chan error
+}
+
+func (r *runner) Run(f func() error) {
+	go func() {
+		r.errors <- f()
+		r.wg.Done()
+	}()
+}
+
+func (r *runner) Error() error {
+	r.wg.Wait()
+	var b bytes.Buffer
+	for {
+		select {
+		case err := <-r.errors:
+			if err != nil {
+				b.WriteString(err.Error())
+				b.WriteString("\n")
+			}
+		default:
+			if len(b.String()) != 0 {
+				return errors.New(b.String())
+			}
+			return nil
+		}
+	}
 }
