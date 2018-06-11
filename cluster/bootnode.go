@@ -41,6 +41,7 @@ type Bootnode struct {
 	ip      string
 	port    int
 	network string
+	enodes  []string
 
 	backend Backend
 	key     *ecdsa.PrivateKey
@@ -49,9 +50,13 @@ type Bootnode struct {
 func (b Bootnode) Create(ctx context.Context) error {
 	log.Debug("creating bootnode", "name", b.name, "enode", b.Self().String())
 	data := hex.EncodeToString(crypto.FromECDSA(b.key))
+	cmd := []string{"-addr=" + fmt.Sprintf("%s:%d", b.ip, b.port), "-keydata=" + data}
+	for _, e := range b.enodes {
+		cmd = append(cmd, "-n="+e)
+	}
 	return b.backend.Create(ctx, b.name, dockershim.CreateOpts{
 		Entrypoint: "bootnode",
-		Cmd:        []string{"-addr=" + fmt.Sprintf("%s:%d", b.ip, b.port), "-keydata=" + data},
+		Cmd:        cmd,
 		Image:      "statusteam/bootnode:latest",
 		IPs: map[string]dockershim.IpOpts{b.network: dockershim.IpOpts{
 			IP:    b.ip,

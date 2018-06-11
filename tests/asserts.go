@@ -10,15 +10,20 @@ func Eventually(t require.TestingT, f func() error, period, interval time.Durati
 	var err error
 	for start := time.Now(); time.Since(start) < period; {
 		err = f()
-		if err != nil {
-			time.Sleep(interval)
-			continue
+		if err == nil {
+			return
 		}
-		return
+		time.Sleep(interval)
 	}
 	t.Errorf(err.Error())
 }
 
 func Consistently(t require.TestingT, f func() error, period, interval time.Duration) {
-
+	for start := time.Now(); time.Since(start) < period; {
+		if err := f(); err != nil {
+			t.Errorf(err.Error())
+			return
+		}
+		time.Sleep(interval)
+	}
 }
