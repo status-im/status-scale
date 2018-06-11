@@ -134,6 +134,10 @@ func (p Peer) EnableConditions(ctx context.Context, opts ...network.Options) err
 	}, ctx, opts...)
 }
 
+func (p Peer) IP() string {
+	return p.config.IP
+}
+
 func (p Peer) DisableConditions(ctx context.Context, opts ...network.Options) error {
 	return network.ComcastStop(func(ctx context.Context, cmd []string) error {
 		log.Debug("run command", "peer", p.name, "command", strings.Join(cmd, " "))

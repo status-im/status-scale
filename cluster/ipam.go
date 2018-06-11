@@ -34,6 +34,16 @@ func (i *IPAM) Take() net.IP {
 	return new
 }
 
+// Peek returns current IP
+func (i *IPAM) Peek() net.IP {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	new := make(net.IP, 4)
+	copy(new, i.cidr.IP)
+	new[3] += i.given
+	return new
+}
+
 func (i *IPAM) String() string {
 	return i.cidr.String()
 }
