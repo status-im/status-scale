@@ -24,9 +24,7 @@ and relay B was able to get required information
 */
 func TestExtendCluster(t *testing.T) {
 	c := ClusterFromConfig()
-	c.Boot = 1
-	c.Relay = 1
-	require.NoError(t, c.Create(context.TODO()))
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{}))
 	defer c.Clean(context.TODO())
 	// makes a link to a previous bootnode
 	require.NoError(t, c.Add(context.TODO(), cluster.ScaleOpts{Boot: 1, Deploy: true}))

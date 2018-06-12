@@ -47,6 +47,10 @@ type Bootnode struct {
 	key     *ecdsa.PrivateKey
 }
 
+func (b Bootnode) String() string {
+	return fmt.Sprintf("bootnode %s %s", b.name, b.ip)
+}
+
 func (b Bootnode) Create(ctx context.Context) error {
 	log.Debug("creating bootnode", "name", b.name, "enode", b.Self().String())
 	data := hex.EncodeToString(crypto.FromECDSA(b.key))
