@@ -16,11 +16,13 @@ import (
 	"github.com/status-im/status-scale/network"
 )
 
+// FIXME config is redundant, either use config everywhere as with Peer or remove it
 type BootnodeConfig struct {
 	Name    string
 	IP      string
 	Network string
 	Enodes  []string
+	Image   string
 }
 
 func NewBootnode(cfg BootnodeConfig, backend Backend) Bootnode {
@@ -36,6 +38,7 @@ func NewBootnode(cfg BootnodeConfig, backend Backend) Bootnode {
 		backend: backend,
 		key:     key,
 		enodes:  cfg.Enodes,
+		image:   cfg.Image,
 	}
 }
 
@@ -45,6 +48,7 @@ type Bootnode struct {
 	port    int
 	network string
 	enodes  []string
+	image   string
 
 	backend Backend
 	key     *ecdsa.PrivateKey
@@ -64,7 +68,7 @@ func (b Bootnode) Create(ctx context.Context) error {
 	return b.backend.Create(ctx, b.name, dockershim.CreateOpts{
 		Entrypoint: "bootnode",
 		Cmd:        cmd,
-		Image:      "statusteam/bootnode-debug:latest",
+		Image:      b.image,
 		IPs: map[string]dockershim.IpOpts{b.network: dockershim.IpOpts{
 			IP:    b.ip,
 			NetID: b.network,
