@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
@@ -19,6 +20,7 @@ type BootnodeConfig struct {
 	Name    string
 	IP      string
 	Network string
+	Enodes  []string
 }
 
 func NewBootnode(cfg BootnodeConfig, backend Backend) Bootnode {
@@ -33,6 +35,7 @@ func NewBootnode(cfg BootnodeConfig, backend Backend) Bootnode {
 		port:    30404,
 		backend: backend,
 		key:     key,
+		enodes:  cfg.Enodes,
 	}
 }
 
@@ -52,16 +55,16 @@ func (b Bootnode) String() string {
 }
 
 func (b Bootnode) Create(ctx context.Context) error {
-	log.Debug("creating bootnode", "name", b.name, "enode", b.Self().String())
 	data := hex.EncodeToString(crypto.FromECDSA(b.key))
 	cmd := []string{"-addr=" + fmt.Sprintf("%s:%d", b.ip, b.port), "-keydata=" + data}
 	for _, e := range b.enodes {
 		cmd = append(cmd, "-n="+e)
 	}
+	log.Debug("creating bootnode", "name", b.name, "enode", b.Self().String(), "cmd", strings.Join(cmd, " "))
 	return b.backend.Create(ctx, b.name, dockershim.CreateOpts{
 		Entrypoint: "bootnode",
 		Cmd:        cmd,
-		Image:      "statusteam/bootnode:latest",
+		Image:      "statusteam/bootnode-debug:latest",
 		IPs: map[string]dockershim.IpOpts{b.network: dockershim.IpOpts{
 			IP:    b.ip,
 			NetID: b.network,

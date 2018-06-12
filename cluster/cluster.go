@@ -71,13 +71,20 @@ func (c *Cluster) Create(ctx context.Context, opts ScaleOpts) error {
 	return c.create(ctx, opts)
 }
 
+func (c *Cluster) totalOfType(typ PeerType) int {
+	return len(c.pending[typ]) + len(c.running[typ])
+}
+
 func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	log.Debug(
-		"Creating cluster.", "name", c.Prefix, "cidr", c.IPAM,
-		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users)
-	netID, err := c.Backend.CreateNetwork(ctx, dockershim.NetOpts{
+		"Adding nodes to cluster.", "name", c.Prefix, "cidr", c.IPAM,
+		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users,
+		"enodes", opts.Enodes,
+	)
+	netID, err := c.Backend.EnsureNetwork(ctx, dockershim.NetOpts{
 		NetName: c.getName("net"),
 		CIDR:    c.IPAM.String(),
+		NetID:   c.netID,
 	})
 	if err != nil {
 		return err
@@ -87,18 +94,22 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	if opts.Enodes != nil {
 		enodes = opts.Enodes
 	}
-	for i := 0; i < opts.Boot; i++ {
+	boot := c.totalOfType(Boot)
+	relay := c.totalOfType(Relay)
+	users := c.totalOfType(User)
+	for i := boot; i < boot+opts.Boot; i++ {
 		b := NewBootnode(BootnodeConfig{
 			Name:    c.getName(string(Boot), strconv.Itoa(i)),
 			Network: netID,
 			IP:      c.IPAM.Take().String(),
+			Enodes:  enodes,
 		}, c.Backend)
 		c.pending[Boot] = append(c.pending[Boot], b)
 		if opts.Enodes == nil {
 			enodes = append(enodes, b.Self().String())
 		}
 	}
-	for i := 0; i < opts.Relay; i++ {
+	for i := relay; i < relay+opts.Relay; i++ {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(Relay), strconv.Itoa(i))
 		cfg.NetID = netID
@@ -112,7 +123,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		log.Trace("adding relay peer to pending", "name", cfg.Name, "ip", cfg.IP)
 		c.pending[Relay] = append(c.pending[Relay], p)
 	}
-	for i := 0; i < opts.Users; i++ {
+	for i := users; i < users+opts.Users; i++ {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(User), strconv.Itoa(i))
 		cfg.NetID = netID
@@ -127,10 +138,6 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	if opts.Deploy {
 		return c.DeployPending(ctx)
 	}
-	return nil
-}
-
-func (c *Cluster) Add(ctx context.Context, opts ScaleOpts) error {
 	return nil
 }
 
@@ -152,7 +159,7 @@ func (c *Cluster) DeployPending(ctx context.Context) error {
 			})
 		}
 	}
-	c.pending = nil
+	c.pending = map[PeerType][]interface{}{}
 	err := run.Error()
 	log.Debug("finished cluster deployment", "error", err)
 	return err
