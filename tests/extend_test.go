@@ -24,13 +24,16 @@ and relay B was able to get required information
 */
 func TestExtendCluster(t *testing.T) {
 	c := ClusterFromConfig()
-	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{}))
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{Boot: 1, Relay: 1, Deploy: true}))
 	defer c.Clean(context.TODO())
-	// makes a link to a previous bootnode
-	require.NoError(t, c.Add(context.TODO(), cluster.ScaleOpts{Boot: 1, Deploy: true}))
+	// add new boot node with a link to a previous bootnode
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{
+		Boot: 1, Deploy: true,
+		Enodes: []string{c.GetBootnode(0).Self().String()},
+	}))
 	// create pending relay so that we can block ip on first bootnode before it gets connected to it
 	// connect it only to 2nd bootnode
-	require.NoError(t, c.Add(context.TODO(), cluster.ScaleOpts{
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{
 		Relay:  1,
 		Enodes: []string{c.GetBootnode(1).Self().String()},
 	}))

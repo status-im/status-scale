@@ -38,6 +38,7 @@ type NetOpts struct {
 	NetName string
 	CIDR    string
 	Driver  string
+	NetID   string
 }
 
 type DockerShim struct {
@@ -112,7 +113,12 @@ func (p DockerShim) Create(ctx context.Context, id string, opts CreateOpts) erro
 	return p.client.ContainerStart(ctx, id, types.ContainerStartOptions{})
 }
 
-func (p DockerShim) CreateNetwork(ctx context.Context, opts NetOpts) (string, error) {
+func (p DockerShim) EnsureNetwork(ctx context.Context, opts NetOpts) (string, error) {
+	// check that cidr intersects
+	net, err := p.client.NetworkInspect(ctx, opts.NetID, types.NetworkInspectOptions{})
+	if err == nil {
+		return net.ID, err
+	}
 	rst, err := p.client.NetworkCreate(ctx, opts.NetName, types.NetworkCreate{
 		IPAM: &network.IPAM{
 			Config: []network.IPAMConfig{{Subnet: opts.CIDR}},
