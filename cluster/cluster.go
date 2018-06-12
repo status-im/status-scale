@@ -38,11 +38,13 @@ const (
 	User  PeerType = "user"
 )
 
-func NewCluster(pref string, ipam *IPAM, b Backend) Cluster {
+func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode string) Cluster {
 	c := Cluster{
-		Prefix:  pref,
-		IPAM:    ipam,
-		Backend: b,
+		Prefix:   pref,
+		IPAM:     ipam,
+		Backend:  b,
+		Statusd:  statusd,
+		Bootnode: bootnode,
 
 		pending: map[PeerType][]interface{}{},
 		running: map[PeerType][]interface{}{},
@@ -51,9 +53,11 @@ func NewCluster(pref string, ipam *IPAM, b Backend) Cluster {
 }
 
 type Cluster struct {
-	Prefix  string
-	IPAM    *IPAM
-	Backend Backend
+	Prefix   string
+	IPAM     *IPAM
+	Backend  Backend
+	Statusd  string
+	Bootnode string
 
 	mu      sync.Mutex
 	netID   string
@@ -103,6 +107,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 			Network: netID,
 			IP:      c.IPAM.Take().String(),
 			Enodes:  enodes,
+			Image:   c.Bootnode,
 		}, c.Backend)
 		c.pending[Boot] = append(c.pending[Boot], b)
 		if opts.Enodes == nil {
@@ -115,6 +120,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.NetID = netID
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
+		cfg.Image = c.Statusd
 		cfg.TopicSearch = map[string]string{
 			"whisper": "5,7",
 		}
@@ -127,6 +133,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(User), strconv.Itoa(i))
 		cfg.NetID = netID
+		cfg.Image = c.Statusd
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.TopicSearch = map[string]string{

@@ -14,10 +14,6 @@ import (
 	"github.com/status-im/status-scale/network"
 )
 
-const (
-	STATUSD = "statusteam/statusd-debug:latest"
-)
-
 func DefaultConfig() PeerConfig {
 	return PeerConfig{
 		Whisper:   true,
@@ -39,6 +35,7 @@ type PeerConfig struct {
 	Name  string
 	NetID string
 	IP    string
+	Image string
 
 	Modules       []string
 	Whisper       bool
@@ -110,7 +107,7 @@ func (p *Peer) Create(ctx context.Context) error {
 	log.Debug("Create statusd", "name", p.name, "command", strings.Join(cmd, " "))
 	err := p.backend.Create(ctx, p.name, dockershim.CreateOpts{
 		Cmd:   cmd,
-		Image: STATUSD,
+		Image: p.config.Image,
 		Ports: exposed,
 		IPs: map[string]dockershim.IpOpts{p.config.NetID: dockershim.IpOpts{
 			IP:    p.config.IP,

@@ -51,5 +51,8 @@ func ClusterFromConfig() cluster.Cluster {
 	if err != nil {
 		panic(err)
 	}
-	return cluster.NewCluster(CONF.Prefix, ipam, dockershim.NewShim(client))
+	return cluster.NewCluster(
+		CONF.Prefix, ipam, dockershim.NewShim(client),
+		CONF.Statusd, CONF.Bootnode,
+	)
 }
