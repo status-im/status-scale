@@ -46,10 +46,5 @@ func ClusterFromConfig() cluster.Cluster {
 	if err != nil {
 		panic(err)
 	}
-	c := cluster.Cluster{
-		Prefix:  CONF.Prefix,
-		Backend: dockershim.NewShim(client),
-		IPAM:    ipam,
-	}
-	return c
+	return cluster.NewCluster(CONF.Prefix, ipam, dockershim.NewShim(client))
 }

@@ -7,21 +7,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/status-im/status-scale/cluster"
 	"github.com/status-im/status-scale/network"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBlockedPeer(t *testing.T) {
 	c := ClusterFromConfig()
-	c.Boot = 1
-	c.Relay = 3
-	require.NoError(t, c.Create(context.TODO()))
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{Boot: 1, Relay: 3, Deploy: true}))
 	defer c.Clean(context.TODO()) // handle interrupt signal
 	var peers []*p2p.PeerInfo
 	Eventually(t, func() error {
 		var err error
 		peers, err = c.GetRelay(0).Admin().Peers(context.TODO())
+		log.Trace("waiting for 2 peers", "peers", len(peers), "err", err)
 		if err != nil {
 			return err
 		}

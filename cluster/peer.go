@@ -31,8 +31,8 @@ func DefaultConfig() PeerConfig {
 	}
 }
 
-func NewPeer(config PeerConfig, backend Backend) Peer {
-	return Peer{name: config.Name, config: config, backend: backend}
+func NewPeer(config PeerConfig, backend Backend) *Peer {
+	return &Peer{name: config.Name, config: config, backend: backend}
 }
 
 type PeerConfig struct {
@@ -61,6 +61,10 @@ type Peer struct {
 	backend Backend
 
 	client *rpc.Client
+}
+
+func (p *Peer) String() string {
+	return fmt.Sprintf("peer %s %s", p.name, p.config.IP)
 }
 
 func (p *Peer) Create(ctx context.Context) error {
@@ -109,6 +113,7 @@ func (p *Peer) Create(ctx context.Context) error {
 		Image: STATUSD,
 		Ports: exposed,
 		IPs: map[string]dockershim.IpOpts{p.config.NetID: dockershim.IpOpts{
+			IP:    p.config.IP,
 			NetID: p.config.NetID,
 		}},
 	})

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,21 +14,51 @@ import (
 	"github.com/status-im/status-scale/dockershim"
 )
 
+type Creatable interface {
+	Create(context.Context) error
+}
+
+type Removable interface {
+	Remove(context.Context) error
+}
+
+type PeerType string
+
+type ScaleOpts struct {
+	Boot   int
+	Relay  int
+	Users  int
+	Deploy bool
+	Enodes []string
+}
+
+const (
+	Boot  PeerType = "boot"
+	Relay PeerType = "relay"
+	User  PeerType = "user"
+)
+
+func NewCluster(pref string, ipam *IPAM, b Backend) Cluster {
+	c := Cluster{
+		Prefix:  pref,
+		IPAM:    ipam,
+		Backend: b,
+
+		pending: map[PeerType][]interface{}{},
+		running: map[PeerType][]interface{}{},
+	}
+	return c
+}
+
 type Cluster struct {
 	Prefix  string
 	IPAM    *IPAM
 	Backend Backend
 
-	Boot, Relay, Users int
-
-	mu        sync.Mutex
-	netID     string
-	bootnodes []Bootnode
-	relays    []Peer
-	users     []Peer
-
-	// TODO generalize it
-	pendingRelays []Peer
+	mu      sync.Mutex
+	netID   string
+	pending map[PeerType][]interface{}
+	running map[PeerType][]interface{}
 }
 
 func (c *Cluster) getName(parts ...string) string {
@@ -36,19 +67,14 @@ func (c *Cluster) getName(parts ...string) string {
 	return strings.Join(fqn, "_")
 }
 
-func (c *Cluster) Create(ctx context.Context) error {
-	return c.create(ctx, ScaleOpts{
-		Boot:   c.Boot,
-		Relay:  c.Relay,
-		Users:  c.Users,
-		Deploy: true,
-	})
+func (c *Cluster) Create(ctx context.Context, opts ScaleOpts) error {
+	return c.create(ctx, opts)
 }
 
 func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	log.Debug(
 		"Creating cluster.", "name", c.Prefix, "cidr", c.IPAM,
-		"boot count", c.Boot, "relay count", c.Relay, "users count", c.Users)
+		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users)
 	netID, err := c.Backend.CreateNetwork(ctx, dockershim.NetOpts{
 		NetName: c.getName("net"),
 		CIDR:    c.IPAM.String(),
@@ -57,30 +83,24 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		return err
 	}
 	c.netID = netID
-
 	var enodes []string
 	if opts.Enodes != nil {
 		enodes = opts.Enodes
 	}
-	for i := 0; i < c.Boot; i++ {
+	for i := 0; i < opts.Boot; i++ {
 		b := NewBootnode(BootnodeConfig{
-			Name:    c.getName("boot", strconv.Itoa(i)),
+			Name:    c.getName(string(Boot), strconv.Itoa(i)),
 			Network: netID,
 			IP:      c.IPAM.Take().String(),
 		}, c.Backend)
-		c.bootnodes = append(c.bootnodes, b)
-		if err := b.Create(ctx); err != nil {
-			return err
-		}
+		c.pending[Boot] = append(c.pending[Boot], b)
 		if opts.Enodes == nil {
 			enodes = append(enodes, b.Self().String())
 		}
 	}
-
-	run := newRunner(c.Relay + c.Users)
-	for i := 0; i < c.Relay; i++ {
+	for i := 0; i < opts.Relay; i++ {
 		cfg := DefaultConfig()
-		cfg.Name = c.getName("relay", strconv.Itoa(i))
+		cfg.Name = c.getName(string(Relay), strconv.Itoa(i))
 		cfg.NetID = netID
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
@@ -89,19 +109,12 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		}
 		cfg.TopicRegister = []string{"whisper"}
 		p := NewPeer(cfg, c.Backend)
-		run.Run(func() error {
-			err := p.Create(ctx)
-			if err == nil {
-				c.mu.Lock()
-				c.relays = append(c.relays, p)
-				c.mu.Unlock()
-			}
-			return err
-		})
+		log.Trace("adding relay peer to pending", "name", cfg.Name, "ip", cfg.IP)
+		c.pending[Relay] = append(c.pending[Relay], p)
 	}
-	for i := 0; i < c.Users; i++ {
+	for i := 0; i < opts.Users; i++ {
 		cfg := DefaultConfig()
-		cfg.Name = c.getName("user", strconv.Itoa(i))
+		cfg.Name = c.getName(string(User), strconv.Itoa(i))
 		cfg.NetID = netID
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
@@ -109,101 +122,83 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 			"whisper": "2,3",
 		}
 		p := NewPeer(cfg, c.Backend)
-		run.Run(func() error {
-			err := p.Create(ctx)
-			if err == nil {
-				c.mu.Lock()
-				c.users = append(c.users, p)
-				c.mu.Unlock()
-			}
-			return err
-		})
+		c.pending[User] = append(c.pending[User], p)
 	}
-	err = run.Error()
-	log.Debug("finished cluster deployment", "error", err)
-	return err
+	if opts.Deploy {
+		return c.DeployPending(ctx)
+	}
+	return nil
 }
 
 func (c *Cluster) Add(ctx context.Context, opts ScaleOpts) error {
-	if opts.Deploy {
-		c.Boot += opts.Boot
-		c.Relay += opts.Relay
-		c.Users += opts.Users
-		return c.create(ctx, opts)
-	}
-	var enodes []string
-	if opts.Enodes != nil {
-		enodes = opts.Enodes
-	} else {
-		for _, b := range c.bootnodes {
-			enodes = append(enodes, b.Self().String())
-		}
-	}
-	for i := c.Relay; i < c.Relay+opts.Relay; i++ {
-		cfg := DefaultConfig()
-		cfg.Name = c.getName("relay", strconv.Itoa(i))
-		cfg.NetID = c.netID
-		cfg.IP = c.IPAM.Take().String()
-		cfg.BootNodes = enodes
-		cfg.TopicSearch = map[string]string{
-			"whisper": "5,7",
-		}
-		cfg.TopicRegister = []string{"whisper"}
-		p := NewPeer(cfg, c.Backend)
-		c.pendingRelays = append(c.pendingRelays, p)
-	}
-	c.Boot += opts.Boot
-	c.Relay += opts.Relay
-	c.Users += opts.Users
 	return nil
 }
 
 func (c *Cluster) DeployPending(ctx context.Context) error {
-	run := newRunner(len(c.pendingRelays))
-	for _, p := range c.pendingRelays {
-		run.Run(func() error {
-			err := p.Create(ctx)
-			if err == nil {
+	run := newRunner(len(c.pending[Boot]) + len(c.pending[Relay]) + len(c.pending[User]))
+	for typ, peers := range c.pending {
+		for i := range peers {
+			typ := typ
+			p := peers[i]
+			run.Run(func() error {
+				err := p.(Creatable).Create(ctx)
 				c.mu.Lock()
-				c.relays = append(c.users, p)
+				c.running[typ] = append(c.running[typ], p)
 				c.mu.Unlock()
-			}
-			return err
-		})
+				if err != nil {
+					return fmt.Errorf("error creating %v: %v", p, err)
+				}
+				return nil
+			})
+		}
 	}
-	c.pendingRelays = nil
+	c.pending = nil
 	err := run.Error()
 	log.Debug("finished cluster deployment", "error", err)
 	return err
 }
 
-func (c *Cluster) GetPendingRelay(n int) Peer {
-	if n > len(c.pendingRelays)-1 {
-		return Peer{}
+func (c *Cluster) GetPendingRelay(n int) *Peer {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.pending[Relay])-1 {
+		return nil
 	}
-	return c.pendingRelays[n]
+	return c.pending[Relay][n].(*Peer)
 }
 
-func (c *Cluster) GetRelay(n int) Peer {
-	return c.relays[n]
+func (c *Cluster) GetRelay(n int) *Peer {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[Relay])-1 {
+		return nil
+	}
+	return c.running[Relay][n].(*Peer)
 }
 
 func (c *Cluster) GetBootnode(n int) Bootnode {
-	return c.bootnodes[n]
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[Boot])-1 {
+		return Bootnode{}
+	}
+	return c.running[Boot][n].(Bootnode)
 }
 
 func (c *Cluster) Clean(ctx context.Context) {
-	for i := 0; i < c.Boot; i++ {
-		c.Backend.Remove(ctx, c.getName("boot", strconv.Itoa(i)))
-	}
-	for i := 0; i < c.Relay; i++ {
-		c.Backend.Remove(ctx, c.getName("relay", strconv.Itoa(i)))
-	}
-	for i := 0; i < c.Users; i++ {
-		c.Backend.Remove(ctx, c.getName("user", strconv.Itoa(i)))
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, peers := range c.running {
+		for _, p := range peers {
+			if err := p.(Removable).Remove(ctx); err != nil {
+				log.Error("error removing", "peer", p, "error", err)
+			}
+		}
 	}
 	log.Debug("removing network", "id", c.netID, "name", c.getName("net"))
-	c.Backend.RemoveNetwork(ctx, c.netID)
+	if err := c.Backend.RemoveNetwork(ctx, c.netID); err != nil {
+		log.Error("error removing", "network", c.getName("net"), "error", err)
+	}
 }
 
 func newRunner(n int) *runner {
@@ -242,12 +237,4 @@ func (r *runner) Error() error {
 			return nil
 		}
 	}
-}
-
-type ScaleOpts struct {
-	Boot   int
-	Relay  int
-	Users  int
-	Deploy bool
-	Enodes []string
 }
