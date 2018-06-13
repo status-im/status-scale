@@ -44,6 +44,12 @@
   revision = "86fed781132ac890ee03e906e4ecd5d6fa180c64"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/buger/jsonparser"
+  packages = ["."]
+  revision = "2cac668e8456b4284edb0715e17e2af02d3ec993"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -135,6 +141,18 @@
   packages = ["."]
   revision = "c9cfead9f2a36ddf3daa40ba269aa7f4bbba6b62"
   version = "v1.0.1"
+
+[[projects]]
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
+  version = "v0.0.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  revision = "d4647c9c7a84d847478d890b816b7d8b62b0b279"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -257,6 +275,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4cd7b42754e7e0a9358f9dac62bfd025f34e12a80c5ccd545aba7346e98da4cd"
+  inputs-digest = "e7e318025869f4681064b996e4156431b84ab63b135c387631557d0fdde8f77b"
   solver-name = "gps-cdcl"
   solver-version = 1
