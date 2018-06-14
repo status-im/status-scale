@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/buger/jsonparser"
 )
@@ -26,7 +27,11 @@ func (r RawColumn) String() string {
 }
 
 func (r RawColumn) Compute(data []byte) (int64, error) {
-	return jsonparser.GetInt(data, r.Path...)
+	rst, err := jsonparser.GetInt(data, r.Path...)
+	if err != nil {
+		return rst, fmt.Errorf("error getting path %v, %v", r.Path, err)
+	}
+	return rst, nil
 }
 
 type ComputeColumn struct {
@@ -44,6 +49,15 @@ func (s ComputeColumn) Compute(r Row) (interface{}, error) {
 
 func NewTab() *Table {
 	return new(Table)
+}
+
+func NewCompleteTab(uid string, columns ...[]interface{}) *Table {
+	tab := NewTab()
+	tab.AddColumns(UIDColumn{uid})
+	for i := range columns {
+		tab.AddColumns(columns[i]...)
+	}
+	return tab
 }
 
 type Table struct {
