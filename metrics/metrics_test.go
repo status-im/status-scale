@@ -19,9 +19,7 @@ func TestMetricsTableDebug(t *testing.T) {
 	data, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
 
-	tab := NewTab()
-	tab.AddColumns(UIDColumn{"name"})
-	tab.AddColumns(P2PColumns()...)
+	tab := NewCompleteTab("name", P2PColumns(), DiscoveryColumns())
 	require.NoError(t, tab.Append("test_1", data))
 	require.NoError(t, tab.Append("test_2", data))
 	ToASCII(tab, os.Stdout).Render()

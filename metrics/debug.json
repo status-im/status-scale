@@ -1,59 +1,195 @@
 {
-  "jsonrpc": "2.0",
-  "id": 67,
-  "result": {
-    "chain": {
-      "inserts": {
-        "AvgRate01Min": 0,
-        "AvgRate05Min": 0,
-        "AvgRate15Min": 0,
-        "MeanRate": 0,
-        "Overall": 0,
-        "Percentiles": {
-          "20": 0,
-          "5": 0,
-          "50": 0,
-          "80": 0,
-          "95": 0
-        }
+  "chain": {
+    "inserts": {
+      "AvgRate01Min": 0,
+      "AvgRate05Min": 0,
+      "AvgRate15Min": 0,
+      "MeanRate": 0,
+      "Overall": 0,
+      "Percentiles": {
+        "20": 0,
+        "5": 0,
+        "50": 0,
+        "80": 0,
+        "95": 0
       }
+    }
+  },
+  "db": {
+    "preimage": {
+      "hits": {
+        "Overall": 0
+      },
+      "total": {
+        "Overall": 0
+      }
+    }
+  },
+  "discv5": {
+    "InboundTraffic": {
+      "AvgRate01Min": 6295.595378512041,
+      "AvgRate05Min": 4766.437582063204,
+      "AvgRate15Min": 3762.186740394723,
+      "MeanRate": 6343.223923293923,
+      "Overall": 1413376
     },
-    "db": {
-      "preimage": {
-        "hits": {
+    "OutboundTraffic": {
+      "AvgRate01Min": 5104.4815018414665,
+      "AvgRate05Min": 3920.685715804697,
+      "AvgRate15Min": 3144.0384099732564,
+      "MeanRate": 5140.673960405278,
+      "Overall": 1145424
+    }
+  },
+  "eth": {
+    "downloader": {
+      "bodies": {
+        "drop": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
           "Overall": 0
         },
-        "total": {
+        "in": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "req": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0,
+          "Percentiles": {
+            "20": 0,
+            "5": 0,
+            "50": 0,
+            "80": 0,
+            "95": 0
+          }
+        },
+        "timeout": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        }
+      },
+      "headers": {
+        "drop": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "in": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "req": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0,
+          "Percentiles": {
+            "20": 0,
+            "5": 0,
+            "50": 0,
+            "80": 0,
+            "95": 0
+          }
+        },
+        "timeout": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        }
+      },
+      "receipts": {
+        "drop": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "in": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "req": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0,
+          "Percentiles": {
+            "20": 0,
+            "5": 0,
+            "50": 0,
+            "80": 0,
+            "95": 0
+          }
+        },
+        "timeout": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        }
+      },
+      "states": {
+        "drop": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "in": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
           "Overall": 0
         }
       }
     },
-    "discv5": {
-      "InboundTraffic": {
-        "AvgRate01Min": 6295.595378512041,
-        "AvgRate05Min": 4766.437582063204,
-        "AvgRate15Min": 3762.186740394723,
-        "MeanRate": 6343.223923293923,
-        "Overall": 1413376
-      },
-      "OutboundTraffic": {
-        "AvgRate01Min": 5104.4815018414665,
-        "AvgRate05Min": 3920.685715804697,
-        "AvgRate15Min": 3144.0384099732564,
-        "MeanRate": 5140.673960405278,
-        "Overall": 1145424
-      }
-    },
-    "eth": {
-      "downloader": {
+    "fetcher": {
+      "fetch": {
         "bodies": {
-          "drop": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "headers": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        }
+      },
+      "filter": {
+        "bodies": {
           "in": {
             "AvgRate01Min": 0,
             "AvgRate05Min": 0,
@@ -61,21 +197,7 @@
             "MeanRate": 0,
             "Overall": 0
           },
-          "req": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0,
-            "Percentiles": {
-              "20": 0,
-              "5": 0,
-              "50": 0,
-              "80": 0,
-              "95": 0
-            }
-          },
-          "timeout": {
+          "out": {
             "AvgRate01Min": 0,
             "AvgRate05Min": 0,
             "AvgRate15Min": 0,
@@ -84,13 +206,6 @@
           }
         },
         "headers": {
-          "drop": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
           "in": {
             "AvgRate01Min": 0,
             "AvgRate05Min": 0,
@@ -98,236 +213,7 @@
             "MeanRate": 0,
             "Overall": 0
           },
-          "req": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0,
-            "Percentiles": {
-              "20": 0,
-              "5": 0,
-              "50": 0,
-              "80": 0,
-              "95": 0
-            }
-          },
-          "timeout": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          }
-        },
-        "receipts": {
-          "drop": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
-          "in": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
-          "req": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0,
-            "Percentiles": {
-              "20": 0,
-              "5": 0,
-              "50": 0,
-              "80": 0,
-              "95": 0
-            }
-          },
-          "timeout": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          }
-        },
-        "states": {
-          "drop": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
-          "in": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          }
-        }
-      },
-      "fetcher": {
-        "fetch": {
-          "bodies": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
-          "headers": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          }
-        },
-        "filter": {
-          "bodies": {
-            "in": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "out": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          },
-          "headers": {
-            "in": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "out": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          }
-        },
-        "prop": {
-          "announces": {
-            "dos": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "drop": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "in": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "out": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0,
-              "Percentiles": {
-                "20": 0,
-                "5": 0,
-                "50": 0,
-                "80": 0,
-                "95": 0
-              }
-            }
-          },
-          "broadcasts": {
-            "dos": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "drop": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "in": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "out": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0,
-              "Percentiles": {
-                "20": 0,
-                "5": 0,
-                "50": 0,
-                "80": 0,
-                "95": 0
-              }
-            }
-          }
-        }
-      },
-      "misc": {
-        "in": {
-          "packets": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
-          "traffic": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          }
-        },
-        "out": {
-          "packets": {
-            "AvgRate01Min": 0,
-            "AvgRate05Min": 0,
-            "AvgRate15Min": 0,
-            "MeanRate": 0,
-            "Overall": 0
-          },
-          "traffic": {
+          "out": {
             "AvgRate01Min": 0,
             "AvgRate05Min": 0,
             "AvgRate15Min": 0,
@@ -337,250 +223,186 @@
         }
       },
       "prop": {
-        "blocks": {
+        "announces": {
+          "dos": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "drop": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
           "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
           },
           "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0,
+            "Percentiles": {
+              "20": 0,
+              "5": 0,
+              "50": 0,
+              "80": 0,
+              "95": 0
             }
           }
         },
-        "hashes": {
+        "broadcasts": {
+          "dos": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "drop": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
           "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
           },
           "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          }
-        },
-        "txns": {
-          "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          },
-          "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          }
-        }
-      },
-      "req": {
-        "bodies": {
-          "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          },
-          "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          }
-        },
-        "headers": {
-          "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          },
-          "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          }
-        },
-        "receipts": {
-          "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          },
-          "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          }
-        },
-        "states": {
-          "in": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            }
-          },
-          "out": {
-            "packets": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
-            },
-            "traffic": {
-              "AvgRate01Min": 0,
-              "AvgRate05Min": 0,
-              "AvgRate15Min": 0,
-              "MeanRate": 0,
-              "Overall": 0
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0,
+            "Percentiles": {
+              "20": 0,
+              "5": 0,
+              "50": 0,
+              "80": 0,
+              "95": 0
             }
           }
         }
       }
     },
-    "les": {
-      "misc": {
+    "misc": {
+      "in": {
+        "packets": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "traffic": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        }
+      },
+      "out": {
+        "packets": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        },
+        "traffic": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
+          "Overall": 0
+        }
+      }
+    },
+    "prop": {
+      "blocks": {
+        "in": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        },
+        "out": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        }
+      },
+      "hashes": {
+        "in": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        },
+        "out": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        }
+      },
+      "txns": {
         "in": {
           "packets": {
             "AvgRate01Min": 0,
@@ -615,136 +437,310 @@
         }
       }
     },
-    "mailserver": {
-      "envelopes": {
-        "AvgRate01Min": 0,
-        "AvgRate05Min": 0,
-        "AvgRate15Min": 0,
-        "MeanRate": 0,
-        "Overall": 0
-      },
-      "envelopesSize": {
-        "AvgRate01Min": 0,
-        "AvgRate05Min": 0,
-        "AvgRate15Min": 0,
-        "MeanRate": 0,
-        "Overall": 0
-      },
-      "processTime": {
-        "AvgRate01Min": 0,
-        "AvgRate05Min": 0,
-        "AvgRate15Min": 0,
-        "MeanRate": 0,
-        "Overall": 0,
-        "Percentiles": {
-          "20": 0,
-          "5": 0,
-          "50": 0,
-          "80": 0,
-          "95": 0
+    "req": {
+      "bodies": {
+        "in": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        },
+        "out": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
         }
       },
-      "requestErrors": {
-        "Overall": 0
+      "headers": {
+        "in": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        },
+        "out": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        }
       },
-      "requests": {
-        "Overall": 0
+      "receipts": {
+        "in": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        },
+        "out": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        }
+      },
+      "states": {
+        "in": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        },
+        "out": {
+          "packets": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          },
+          "traffic": {
+            "AvgRate01Min": 0,
+            "AvgRate05Min": 0,
+            "AvgRate15Min": 0,
+            "MeanRate": 0,
+            "Overall": 0
+          }
+        }
       }
-    },
-    "p2p": {
-      "InboundConnects": {
-        "AvgRate01Min": 0.00048288989363884984,
-        "AvgRate05Min": 0.0016415666250444833,
-        "AvgRate15Min": 0.0008774377121684358,
-        "MeanRate": 0.004546220407737178,
-        "Overall": 1
-      },
-      "InboundTraffic": {
-        "AvgRate01Min": 124.5991963900081,
-        "AvgRate05Min": 66.10635128047407,
-        "AvgRate15Min": 27.536977964203857,
-        "MeanRate": 127.39648532954924,
-        "Overall": 28292
-      },
-      "MaxPeers": {
-        "Value": 25
-      },
-      "OutboundConnects": {
-        "AvgRate01Min": 0,
-        "AvgRate05Min": 0,
-        "AvgRate15Min": 0,
-        "MeanRate": 0,
-        "Overall": 0
-      },
-      "OutboundTraffic": {
-        "AvgRate01Min": 124.56491120755973,
-        "AvgRate05Min": 65.98980005009591,
-        "AvgRate15Min": 27.47467988663991,
-        "MeanRate": 127.07686432000158,
-        "Overall": 28221
-      },
-      "Peers": {
-        "Overall": 1
-      }
-    },
-    "trie": {
-      "cachemiss": {
-        "Overall": 0
-      },
-      "cacheunload": {
-        "Overall": 0
-      }
-    },
-    "txpool": {
-      "invalid": {
-        "Overall": 0
-      },
-      "pending": {
-        "discard": {
+    }
+  },
+  "les": {
+    "misc": {
+      "in": {
+        "packets": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
           "Overall": 0
         },
-        "nofunds": {
-          "Overall": 0
-        },
-        "ratelimit": {
-          "Overall": 0
-        },
-        "replace": {
+        "traffic": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
           "Overall": 0
         }
       },
-      "queued": {
-        "discard": {
+      "out": {
+        "packets": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
           "Overall": 0
         },
-        "nofunds": {
-          "Overall": 0
-        },
-        "ratelimit": {
-          "Overall": 0
-        },
-        "replace": {
+        "traffic": {
+          "AvgRate01Min": 0,
+          "AvgRate05Min": 0,
+          "AvgRate15Min": 0,
+          "MeanRate": 0,
           "Overall": 0
         }
+      }
+    }
+  },
+  "mailserver": {
+    "envelopes": {
+      "AvgRate01Min": 0,
+      "AvgRate05Min": 0,
+      "AvgRate15Min": 0,
+      "MeanRate": 0,
+      "Overall": 0
+    },
+    "envelopesSize": {
+      "AvgRate01Min": 0,
+      "AvgRate05Min": 0,
+      "AvgRate15Min": 0,
+      "MeanRate": 0,
+      "Overall": 0
+    },
+    "processTime": {
+      "AvgRate01Min": 0,
+      "AvgRate05Min": 0,
+      "AvgRate15Min": 0,
+      "MeanRate": 0,
+      "Overall": 0,
+      "Percentiles": {
+        "20": 0,
+        "5": 0,
+        "50": 0,
+        "80": 0,
+        "95": 0
+      }
+    },
+    "requestErrors": {
+      "Overall": 0
+    },
+    "requests": {
+      "Overall": 0
+    }
+  },
+  "p2p": {
+    "InboundConnects": {
+      "AvgRate01Min": 0.00048288989363884984,
+      "AvgRate05Min": 0.0016415666250444833,
+      "AvgRate15Min": 0.0008774377121684358,
+      "MeanRate": 0.004546220407737178,
+      "Overall": 1
+    },
+    "InboundTraffic": {
+      "AvgRate01Min": 124.5991963900081,
+      "AvgRate05Min": 66.10635128047407,
+      "AvgRate15Min": 27.536977964203857,
+      "MeanRate": 127.39648532954924,
+      "Overall": 28292
+    },
+    "MaxPeers": {
+      "Value": 25
+    },
+    "OutboundConnects": {
+      "AvgRate01Min": 0,
+      "AvgRate05Min": 0,
+      "AvgRate15Min": 0,
+      "MeanRate": 0,
+      "Overall": 0
+    },
+    "OutboundTraffic": {
+      "AvgRate01Min": 124.56491120755973,
+      "AvgRate05Min": 65.98980005009591,
+      "AvgRate15Min": 27.47467988663991,
+      "MeanRate": 127.07686432000158,
+      "Overall": 28221
+    },
+    "Peers": {
+      "Overall": 1
+    }
+  },
+  "trie": {
+    "cachemiss": {
+      "Overall": 0
+    },
+    "cacheunload": {
+      "Overall": 0
+    }
+  },
+  "txpool": {
+    "invalid": {
+      "Overall": 0
+    },
+    "pending": {
+      "discard": {
+        "Overall": 0
       },
-      "underpriced": {
+      "nofunds": {
+        "Overall": 0
+      },
+      "ratelimit": {
+        "Overall": 0
+      },
+      "replace": {
         "Overall": 0
       }
     },
-    "whisper": {
-      "Envelope": {
+    "queued": {
+      "discard": {
         "Overall": 0
       },
-      "EnvelopeNew": {
+      "nofunds": {
         "Overall": 0
       },
-      "EnvelopeSize": {
-        "AvgRate01Min": 0,
-        "AvgRate05Min": 0,
-        "AvgRate15Min": 0,
-        "MeanRate": 0,
+      "ratelimit": {
+        "Overall": 0
+      },
+      "replace": {
         "Overall": 0
       }
+    },
+    "underpriced": {
+      "Overall": 0
+    }
+  },
+  "whisper": {
+    "Envelope": {
+      "Overall": 0
+    },
+    "EnvelopeNew": {
+      "Overall": 0
+    },
+    "EnvelopeSize": {
+      "AvgRate01Min": 0,
+      "AvgRate05Min": 0,
+      "AvgRate15Min": 0,
+      "MeanRate": 0,
+      "Overall": 0
     }
   }
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/status-im/status-scale/dockershim"
+	"github.com/status-im/status-scale/metrics"
 )
 
 type Creatable interface {
@@ -213,6 +214,21 @@ func (c *Cluster) Clean(ctx context.Context) {
 	if err := c.Backend.RemoveNetwork(ctx, c.netID); err != nil {
 		log.Error("error removing", "network", c.getName("net"), "error", err)
 	}
+}
+
+func (c *Cluster) FillMetrics(ctx context.Context, tab *metrics.Table) error {
+	for i := range c.running[Relay] {
+		p := c.running[Relay][i].(*Peer)
+		log.Debug("fetching metrics for", "peer", p.UID())
+		data, err := p.RawMetrics(ctx)
+		if err != nil {
+			return err
+		}
+		if err = tab.Append(p.UID(), data); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func newRunner(n int) *runner {

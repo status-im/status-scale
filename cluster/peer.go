@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -163,6 +164,17 @@ func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
 
 func (p Peer) Admin() Admin {
 	return Admin{client: p.client}
+}
+
+func (p Peer) UID() string {
+	return p.name
+}
+
+func (p Peer) RawMetrics(ctx context.Context) ([]byte, error) {
+	rst := json.RawMessage{}
+	err := p.client.CallContext(ctx, &rst, "debug_metrics", true)
+	log.Trace("fetched metrics", "peer", p.name, "metrics", string(rst))
+	return []byte(rst), err
 }
 
 func (p Peer) healthcheck(ctx context.Context, retries int, interval time.Duration) error {
