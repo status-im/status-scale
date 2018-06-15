@@ -14,4 +14,5 @@ type Backend interface {
 	EnsureNetwork(context.Context, dockershim.NetOpts) (string, error)
 	RemoveNetwork(context.Context, string) error
 	ConnectionInfo(context.Context, string, int) ([]nat.PortBinding, error)
+	Reboot(context.Context, string) error
 }

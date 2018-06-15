@@ -99,3 +99,8 @@ func (b Bootnode) DisableConditions(ctx context.Context, opts ...network.Options
 		return b.backend.Execute(ctx, b.name, cmd)
 	}, ctx, opts...)
 }
+
+func (b Bootnode) Reboot(ctx context.Context) error {
+	log.Debug("reboot", "bootnode", b.name)
+	return b.backend.Reboot(ctx, b.name)
+}

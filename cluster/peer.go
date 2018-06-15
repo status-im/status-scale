@@ -192,3 +192,15 @@ func (p Peer) healthcheck(ctx context.Context, retries int, interval time.Durati
 	}
 	return fmt.Errorf("peer %s failed healthcheck", p.name)
 }
+
+func (p *Peer) Reboot(ctx context.Context) (err error) {
+	log.Debug("reboot", "peer", p.name)
+	if err = p.backend.Reboot(ctx, p.name); err != nil {
+		return err
+	}
+	p.client, err = p.makeRPCClient(ctx)
+	if err != nil {
+		return err
+	}
+	return p.healthcheck(ctx, 20, time.Second)
+}
