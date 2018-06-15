@@ -17,3 +17,9 @@ func DiscoveryColumns() []interface{} {
 		RawColumn{[]string{"discv5", "OutboundTraffic", "Overall"}, "discovery/outbound"},
 	}
 }
+
+func OnlyPeers() []interface{} {
+	return []interface{}{
+		RawColumn{[]string{"p2p", "Peers", "Overall"}, "p2p/peers"},
+	}
+}

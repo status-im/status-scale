@@ -113,6 +113,11 @@ func (p DockerShim) Create(ctx context.Context, id string, opts CreateOpts) erro
 	return p.client.ContainerStart(ctx, id, types.ContainerStartOptions{})
 }
 
+func (p DockerShim) Reboot(ctx context.Context, id string) error {
+	timeout := 5 * time.Second
+	return p.client.ContainerRestart(ctx, id, &timeout)
+}
+
 func (p DockerShim) EnsureNetwork(ctx context.Context, opts NetOpts) (string, error) {
 	// check that cidr intersects
 	net, err := p.client.NetworkInspect(ctx, opts.NetID, types.NetworkInspectOptions{})

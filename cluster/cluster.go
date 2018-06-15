@@ -15,12 +15,18 @@ import (
 	"github.com/status-im/status-scale/metrics"
 )
 
+// Fixme standardize access to bootnodes and peers
+
 type Creatable interface {
 	Create(context.Context) error
 }
 
 type Removable interface {
 	Remove(context.Context) error
+}
+
+type Rebootable interface {
+	Reboot(context.Context) error
 }
 
 type PeerType string
@@ -115,6 +121,12 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 			enodes = append(enodes, b.Self().String())
 		}
 	}
+	// if nil collect both running and pending
+	if opts.Enodes == nil {
+		for _, p := range c.running[Boot] {
+			enodes = append(enodes, p.(Bootnode).Self().String())
+		}
+	}
 	for i := relay; i < relay+opts.Relay; i++ {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(Relay), strconv.Itoa(i))
@@ -138,7 +150,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.TopicSearch = map[string]string{
-			"whisper": "2,3",
+			"whisper": "2,2",
 		}
 		p := NewPeer(cfg, c.Backend)
 		c.pending[User] = append(c.pending[User], p)
@@ -200,6 +212,21 @@ func (c *Cluster) GetBootnode(n int) Bootnode {
 	return c.running[Boot][n].(Bootnode)
 }
 
+func (c *Cluster) Reboot(ctx context.Context, t PeerType) error {
+	if _, ok := c.running[t]; !ok {
+		return fmt.Errorf("type %v not found in running", t)
+	}
+	r := newRunner(len(c.running[t]))
+	for i := range c.running[t] {
+		p := c.running[t][i].(Rebootable)
+		r.Run(func() error {
+			return p.Reboot(ctx)
+		})
+	}
+	return r.Error()
+
+}
+
 func (c *Cluster) Clean(ctx context.Context) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -216,16 +243,30 @@ func (c *Cluster) Clean(ctx context.Context) {
 	}
 }
 
-func (c *Cluster) FillMetrics(ctx context.Context, tab *metrics.Table) error {
-	for i := range c.running[Relay] {
-		p := c.running[Relay][i].(*Peer)
-		log.Debug("fetching metrics for", "peer", p.UID())
-		data, err := p.RawMetrics(ctx)
-		if err != nil {
-			return err
-		}
-		if err = tab.Append(p.UID(), data); err != nil {
-			return err
+type MetricsOpts struct {
+	NoRelay bool
+	NoUsers bool
+}
+
+func (c *Cluster) FillMetrics(ctx context.Context, tab *metrics.Table, opts MetricsOpts) error {
+	groups := []PeerType{}
+	if !opts.NoRelay {
+		groups = append(groups, Relay)
+	}
+	if !opts.NoUsers {
+		groups = append(groups, User)
+	}
+	for _, g := range groups {
+		for i := range c.running[g] {
+			p := c.running[g][i].(*Peer)
+			log.Debug("fetching metrics for", "peer", p.UID())
+			data, err := p.RawMetrics(ctx)
+			if err != nil {
+				return err
+			}
+			if err = tab.Append(p.UID(), data); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
