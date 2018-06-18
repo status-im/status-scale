@@ -105,6 +105,7 @@ func (p *Peer) Create(ctx context.Context) error {
 	for topic, args := range p.config.TopicSearch {
 		cmd = append(cmd, strings.Join([]string{"-topic.search", topic, args}, "="))
 	}
+	cmd = append(cmd, "-log", "trace")
 	log.Debug("Create statusd", "name", p.name, "command", strings.Join(cmd, " "))
 	err := p.backend.Create(ctx, p.name, dockershim.CreateOpts{
 		Cmd:   cmd,
