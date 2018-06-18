@@ -53,6 +53,6 @@ func ClusterFromConfig() cluster.Cluster {
 	}
 	return cluster.NewCluster(
 		CONF.Prefix, ipam, dockershim.NewShim(client),
-		CONF.Statusd, CONF.Bootnode,
+		CONF.Statusd, CONF.Bootnode, CONF.Keep,
 	)
 }

@@ -45,13 +45,14 @@ const (
 	User  PeerType = "user"
 )
 
-func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode string) Cluster {
+func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode string, keep bool) Cluster {
 	c := Cluster{
 		Prefix:   pref,
 		IPAM:     ipam,
 		Backend:  b,
 		Statusd:  statusd,
 		Bootnode: bootnode,
+		Keep:     keep,
 
 		pending: map[PeerType][]interface{}{},
 		running: map[PeerType][]interface{}{},
@@ -65,6 +66,7 @@ type Cluster struct {
 	Backend  Backend
 	Statusd  string
 	Bootnode string
+	Keep     bool
 
 	mu      sync.Mutex
 	netID   string
@@ -228,6 +230,9 @@ func (c *Cluster) Reboot(ctx context.Context, t PeerType) error {
 }
 
 func (c *Cluster) Clean(ctx context.Context) {
+	if c.Keep {
+		return
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, peers := range c.running {
@@ -250,26 +255,32 @@ type MetricsOpts struct {
 
 func (c *Cluster) FillMetrics(ctx context.Context, tab *metrics.Table, opts MetricsOpts) error {
 	groups := []PeerType{}
+	n := 0
 	if !opts.NoRelay {
 		groups = append(groups, Relay)
+		n += len(c.running[Relay])
 	}
 	if !opts.NoUsers {
 		groups = append(groups, User)
+		n += len(c.running[User])
 	}
+	r := newRunner(n)
 	for _, g := range groups {
 		for i := range c.running[g] {
-			p := c.running[g][i].(*Peer)
-			log.Debug("fetching metrics for", "peer", p.UID())
-			data, err := p.RawMetrics(ctx)
-			if err != nil {
-				return err
-			}
-			if err = tab.Append(p.UID(), data); err != nil {
-				return err
-			}
+			g := g
+			i := i
+			r.Run(func() error {
+				p := c.running[g][i].(*Peer)
+				log.Debug("fetching metrics for", "peer", p.UID())
+				data, err := p.RawMetrics(ctx)
+				if err != nil {
+					return err
+				}
+				return tab.Append(p.UID(), data)
+			})
 		}
 	}
-	return nil
+	return r.Error()
 }
 
 func newRunner(n int) *runner {

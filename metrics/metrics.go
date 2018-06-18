@@ -3,6 +3,7 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/buger/jsonparser"
 )
@@ -61,15 +62,20 @@ func NewCompleteTab(uid string, columns ...[]interface{}) *Table {
 }
 
 type Table struct {
+	mu      sync.Mutex
 	columns []interface{}
 	rows    []Row
 }
 
 func (t *Table) AddColumns(columns ...interface{}) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	t.columns = append(t.columns, columns...)
 }
 
 func (t *Table) Append(uid string, data []byte) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	r := Row{}
 	for i := range t.columns {
 		col := t.columns[i]
