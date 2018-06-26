@@ -16,9 +16,13 @@ import (
 
 func TestBlockedPeer(t *testing.T) {
 	c := ClusterFromConfig()
+
+	// Setup the testing cluster
 	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{Boot: 1, Relay: 3, Deploy: true}))
 	defer c.Clean(context.TODO()) // handle interrupt signal
 	var peers []*p2p.PeerInfo
+
+	// All connected peers to the first relay peer should be eq 2
 	Eventually(t, func() error {
 		var err error
 		peers, err = c.GetRelay(0).Admin().Peers(context.TODO())
@@ -31,10 +35,15 @@ func TestBlockedPeer(t *testing.T) {
 		}
 		return nil
 	}, 30*time.Second, 1*time.Second)
+
+	// Set flaky network connection on the first relay peer
 	require.NoError(t, c.GetRelay(0).EnableConditions(context.TODO(), network.Options{
 		PacketLoss: 100,
 		TargetAddr: strings.Split(peers[0].Network.RemoteAddress, ":")[0],
 	}))
+
+	// As one of the connected peers will have a flaky connection now, we are
+	// checking the number of connected peers is one less
 	Eventually(t, func() error {
 		peers, err := c.GetRelay(0).Admin().Peers(context.TODO())
 		if err != nil {
