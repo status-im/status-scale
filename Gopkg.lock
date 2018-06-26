@@ -99,10 +99,11 @@
     "p2p/nat",
     "p2p/netutil",
     "rlp",
-    "rpc"
+    "rpc",
+    "whisper/whisperv6"
   ]
-  revision = "eae63c511ceafab14b92e274c1b18bf1700e2d3d"
-  version = "v1.8.10"
+  revision = "dea1ce052a10cd7d401a5c04f83f371a06fe293c"
+  version = "v1.8.11"
 
 [[projects]]
   name = "github.com/go-stack/stack"
@@ -217,6 +218,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["pbkdf2"]
+  revision = "027cca12c2d63e3d62b670d901e8a2c95854feec"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -229,6 +236,12 @@
     "websocket"
   ]
   revision = "1e491301e022f8f977054da4c2d852decd59571f"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sync"
+  packages = ["syncmap"]
+  revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
 [[projects]]
   branch = "master"
@@ -275,6 +288,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "05426f255be0f6c75739c5c097f90ed18759f1e8da671fcf78d3c891d7e0384c"
+  inputs-digest = "0dc55b4e377e6b6d09da8c846030ef79dd1cf4a9b677e28c4c23d6b353e460f4"
   solver-name = "gps-cdcl"
   solver-version = 1

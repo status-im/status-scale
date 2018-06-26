@@ -43,3 +43,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/olekukonko/tablewriter"
+
+[[constraint]]
+  name = "github.com/ethereum/go-ethereum"
+  version = "v1.8.11"

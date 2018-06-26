@@ -31,7 +31,7 @@ $ vagrant ssh
 vagrant> cd /home/vagrant/go/src/github.com/status-im/status-scale
 vagrant> docker build -f Dockerfile -t statusteam/statusd-debug:latest .
 vagrant> docker build -f Dockerfile-boot -t statusteam/bootnode-debug:latest .
-vagrant> $ go test ./tests/ -v
+vagrant> go test ./tests/ -v
 ```
 
 There are no mandatory options in config, but you can explore them in `tests/config.go`.

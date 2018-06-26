@@ -13,6 +13,7 @@ import (
 
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/network"
+	"github.com/status-im/status-scale/whisper"
 )
 
 func DefaultConfig() PeerConfig {
@@ -84,6 +85,7 @@ func (p *Peer) Create(ctx context.Context) error {
 			cmd = append(cmd, "-httpmodules="+strings.Join(p.config.Modules, ","))
 		}
 	}
+	cmd = append(cmd, "-debug")
 	if p.config.Metrics {
 		cmd = append(cmd, "-metrics")
 	}
@@ -165,6 +167,10 @@ func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
 
 func (p Peer) Admin() Admin {
 	return Admin{client: p.client}
+}
+
+func (p Peer) Whisper() *whisper.Client {
+	return whisper.New(p.client)
 }
 
 func (p Peer) UID() string {
