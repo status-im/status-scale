@@ -22,6 +22,7 @@ func init() {
 	flag.BoolVar(&CONF.Keep, "keep", false, "keep cluster after tests")
 	flag.StringVar(&CONF.Statusd, "statusd", "statusteam/statusd-debug:latest", "image for status go with comcast")
 	flag.StringVar(&CONF.Bootnode, "bootnode", "statusteam/bootnode-debug:latest", "image for bootnode with comcast")
+	flag.StringVar(&CONF.Rendezvous, "rendezvous", "statusteam/rendezvous-debug:latest", "image for rendezvous with comcast")
 	flag.Parse()
 
 	handler := log.StreamHandler(os.Stderr, log.TerminalFormat(true))
@@ -38,8 +39,10 @@ type Config struct {
 	Verbosity string
 	Keep      bool
 
-	Statusd  string
-	Bootnode string
+	// images
+	Statusd    string
+	Bootnode   string
+	Rendezvous string
 }
 
 func ClusterFromConfig() cluster.Cluster {
@@ -53,6 +56,6 @@ func ClusterFromConfig() cluster.Cluster {
 	}
 	return cluster.NewCluster(
 		CONF.Prefix, ipam, dockershim.NewShim(client),
-		CONF.Statusd, CONF.Bootnode, CONF.Keep,
+		CONF.Statusd, CONF.Bootnode, CONF.Rendezvous, CONF.Keep,
 	)
 }

@@ -42,6 +42,8 @@ func NewBootnode(cfg BootnodeConfig, backend Backend) Bootnode {
 	}
 }
 
+// TODO bootnode should store parts reusable between rendezvous and discv5. currently
+// we patch this struct in rendezvous. which is ok but not clean!
 type Bootnode struct {
 	name    string
 	ip      string

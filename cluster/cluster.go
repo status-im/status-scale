@@ -32,27 +32,30 @@ type Rebootable interface {
 type PeerType string
 
 type ScaleOpts struct {
-	Boot   int
-	Relay  int
-	Users  int
-	Deploy bool
-	Enodes []string
+	Boot       int
+	Relay      int
+	Users      int
+	Rendezvous int
+	Deploy     bool
+	Enodes     []string
 }
 
 const (
-	Boot  PeerType = "boot"
-	Relay PeerType = "relay"
-	User  PeerType = "user"
+	Boot           PeerType = "boot"
+	Relay          PeerType = "relay"
+	User           PeerType = "user"
+	RendezvousBoot PeerType = "rendezvous"
 )
 
-func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode string, keep bool) Cluster {
+func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode, rendezvous string, keep bool) Cluster {
 	c := Cluster{
-		Prefix:   pref,
-		IPAM:     ipam,
-		Backend:  b,
-		Statusd:  statusd,
-		Bootnode: bootnode,
-		Keep:     keep,
+		Prefix:         pref,
+		IPAM:           ipam,
+		Backend:        b,
+		Statusd:        statusd,
+		Bootnode:       bootnode,
+		RendezvousBoot: rendezvous,
+		Keep:           keep,
 
 		pending: map[PeerType][]interface{}{},
 		running: map[PeerType][]interface{}{},
@@ -61,12 +64,17 @@ func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode string, ke
 }
 
 type Cluster struct {
-	Prefix   string
-	IPAM     *IPAM
-	Backend  Backend
-	Statusd  string
-	Bootnode string
-	Keep     bool
+	Prefix  string
+	IPAM    *IPAM
+	Backend Backend
+
+	// images
+	Statusd        string
+	Bootnode       string
+	RendezvousBoot string
+
+	// dont remove cluster after tests are finished
+	Keep bool
 
 	mu      sync.Mutex
 	netID   string
@@ -103,13 +111,17 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		return err
 	}
 	c.netID = netID
-	var enodes []string
+	var (
+		enodes          []string
+		rendezvousNodes []string
+	)
 	if opts.Enodes != nil {
 		enodes = opts.Enodes
 	}
 	boot := c.totalOfType(Boot)
 	relay := c.totalOfType(Relay)
 	users := c.totalOfType(User)
+	rendezvous := c.totalOfType(RendezvousBoot)
 	for i := boot; i < boot+opts.Boot; i++ {
 		b := NewBootnode(BootnodeConfig{
 			Name:    c.getName(string(Boot), strconv.Itoa(i)),
@@ -129,12 +141,27 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 			enodes = append(enodes, p.(Bootnode).Self().String())
 		}
 	}
+	for i := rendezvous; i < rendezvous+opts.Rendezvous; i++ {
+		r := Rendezvous(NewBootnode(BootnodeConfig{
+			Name:    c.getName(string(RendezvousBoot), strconv.Itoa(i)),
+			Network: netID,
+			IP:      c.IPAM.Take().String(),
+			Image:   c.RendezvousBoot,
+		}, c.Backend))
+		c.pending[Boot] = append(c.pending[RendezvousBoot], r)
+		rendezvousNodes = append(rendezvousNodes, r.Addr())
+	}
+	for _, p := range c.running[RendezvousBoot] {
+		rendezvousNodes = append(rendezvousNodes, p.(Rendezvous).Addr())
+	}
+
 	for i := relay; i < relay+opts.Relay; i++ {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(Relay), strconv.Itoa(i))
 		cfg.NetID = netID
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
+		cfg.RendezvousNodes = rendezvousNodes
 		cfg.Image = c.Statusd
 		cfg.TopicSearch = map[string]string{
 			"whisper": "5,7",
@@ -151,6 +178,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.Image = c.Statusd
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
+		cfg.RendezvousNodes = rendezvousNodes
 		cfg.TopicSearch = map[string]string{
 			"whisper": "2,2",
 		}
