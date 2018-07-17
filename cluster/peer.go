@@ -39,18 +39,19 @@ type PeerConfig struct {
 	IP    string
 	Image string
 
-	Modules       []string
-	Whisper       bool
-	BootNodes     []string
-	NetworkID     int
-	HTTP          bool
-	Port          int
-	Host          string
-	Metrics       bool
-	TopicSearch   map[string]string
-	TopicRegister []string
-	Discovery     bool
-	Standalone    bool
+	Modules         []string
+	Whisper         bool
+	BootNodes       []string
+	RendezvousNodes []string
+	NetworkID       int
+	HTTP            bool
+	Port            int
+	Host            string
+	Metrics         bool
+	TopicSearch     map[string]string
+	TopicRegister   []string
+	Discovery       bool
+	Standalone      bool
 }
 
 type Peer struct {
@@ -90,7 +91,14 @@ func (p *Peer) Create(ctx context.Context) error {
 		cmd = append(cmd, "-metrics")
 	}
 	if len(p.config.BootNodes) != 0 {
+		cmd = append(cmd, "-dtype=ethv5")
 		cmd = append(cmd, "-bootnodes="+strings.Join(p.config.BootNodes, ","))
+	}
+	if len(p.config.RendezvousNodes) != 0 {
+		cmd = append(cmd, "-dtype=ethvousv1")
+		for _, n := range p.config.RendezvousNodes {
+			cmd = append(cmd, "-rendnode="+n)
+		}
 	}
 	if !p.config.Standalone {
 		cmd = append(cmd, "-standalone=false")
