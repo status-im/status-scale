@@ -18,6 +18,13 @@ func DiscoveryColumns() []interface{} {
 	}
 }
 
+func RendezvousColumns() []interface{} {
+	return []interface{}{
+		RawColumn{[]string{"rendezvous", "InboundTraffic", "Overall"}, "rendezvous/inbound"},
+		RawColumn{[]string{"rendezvous", "OutboundTraffic", "Overall"}, "rendezvous/outbound"},
+	}
+}
+
 func OnlyPeers() []interface{} {
 	return []interface{}{
 		RawColumn{[]string{"p2p", "Peers", "Overall"}, "p2p/peers"},

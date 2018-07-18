@@ -148,7 +148,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 			IP:      c.IPAM.Take().String(),
 			Image:   c.RendezvousBoot,
 		}, c.Backend))
-		c.pending[Boot] = append(c.pending[RendezvousBoot], r)
+		c.pending[RendezvousBoot] = append(c.pending[RendezvousBoot], r)
 		rendezvousNodes = append(rendezvousNodes, r.Addr())
 	}
 	for _, p := range c.running[RendezvousBoot] {
@@ -192,8 +192,9 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 }
 
 func (c *Cluster) DeployPending(ctx context.Context) error {
-	run := newRunner(len(c.pending[Boot]) + len(c.pending[Relay]) + len(c.pending[User]))
+	run := newRunner(len(c.pending[Boot]) + len(c.pending[Relay]) + len(c.pending[User]) + len(c.pending[RendezvousBoot]))
 	for typ, peers := range c.pending {
+		log.Info("pending", "type", typ, "len", len(peers))
 		for i := range peers {
 			typ := typ
 			p := peers[i]
