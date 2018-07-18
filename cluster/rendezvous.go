@@ -24,7 +24,7 @@ func (r Rendezvous) String() string {
 
 func (r Rendezvous) Create(ctx context.Context) error {
 	data := hex.EncodeToString(crypto.FromECDSA(r.key))
-	cmd := []string{"-a=" + r.ip, "-p=" + strconv.Itoa(r.port), "-keyhex=" + data}
+	cmd := []string{"-a=" + r.ip, "-p=" + strconv.Itoa(r.port), "--keyhex=" + data}
 	log.Debug("creating rendezvous", "name", r.name, "address", r.String(), "cmd", strings.Join(cmd, " "))
 	return r.backend.Create(ctx, r.name, dockershim.CreateOpts{
 		Entrypoint: "rendezvous",
@@ -45,5 +45,10 @@ func (r Rendezvous) Addr() string {
 		log.Error("unable to convert public key to pid", "error", err)
 		return ""
 	}
-	return fmt.Sprintf("/ipv4/%s/tcp/%d/ethv4/%s", r.ip, r.port, id.Pretty())
+	return fmt.Sprintf("/ip4/%s/tcp/%d/ethv4/%s", r.ip, r.port, id.Pretty())
+}
+
+func (r Rendezvous) Remove(ctx context.Context) error {
+	log.Debug("remove rendezvous", "name", r.name)
+	return r.backend.Remove(ctx, r.name)
 }
