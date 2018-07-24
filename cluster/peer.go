@@ -91,20 +91,17 @@ func (p *Peer) Create(ctx context.Context) error {
 		cmd = append(cmd, "-metrics")
 	}
 	if len(p.config.BootNodes) != 0 {
-		cmd = append(cmd, "-dtype=ethv5")
+		cmd = append(cmd, "-discovery=true")
 		cmd = append(cmd, "-bootnodes="+strings.Join(p.config.BootNodes, ","))
 	}
 	if len(p.config.RendezvousNodes) != 0 {
-		cmd = append(cmd, "-dtype=ethvousv1")
+		cmd = append(cmd, "-rendezvous=true")
 		for _, n := range p.config.RendezvousNodes {
-			cmd = append(cmd, "-rendnode="+n)
+			cmd = append(cmd, "-rendezvous-node="+n)
 		}
 	}
 	if !p.config.Standalone {
 		cmd = append(cmd, "-standalone=false")
-	}
-	if p.config.Discovery {
-		cmd = append(cmd, "-discovery=true")
 	}
 	if p.config.NetworkID != 0 {
 		cmd = append(cmd, "-networkid="+strconv.Itoa(p.config.NetworkID))
