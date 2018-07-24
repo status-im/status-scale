@@ -32,12 +32,13 @@ type Rebootable interface {
 type PeerType string
 
 type ScaleOpts struct {
-	Boot       int
-	Relay      int
-	Users      int
-	Rendezvous int
-	Deploy     bool
-	Enodes     []string
+	Boot            int
+	Relay           int
+	Users           int
+	Rendezvous      int
+	Deploy          bool
+	Enodes          []string
+	RendezvousNodes []string
 }
 
 const (
@@ -100,7 +101,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	log.Debug(
 		"Adding nodes to cluster.", "name", c.Prefix, "cidr", c.IPAM,
 		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users,
-		"enodes", opts.Enodes,
+		"rendezvous count", opts.Rendezvous, "enodes", opts.Enodes, "rendezvous", opts.RendezvousNodes,
 	)
 	netID, err := c.Backend.EnsureNetwork(ctx, dockershim.NetOpts{
 		NetName: c.getName("net"),
@@ -117,6 +118,9 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	)
 	if opts.Enodes != nil {
 		enodes = opts.Enodes
+	}
+	if opts.RendezvousNodes != nil {
+		rendezvousNodes = opts.RendezvousNodes
 	}
 	boot := c.totalOfType(Boot)
 	relay := c.totalOfType(Relay)
@@ -151,8 +155,10 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		c.pending[RendezvousBoot] = append(c.pending[RendezvousBoot], r)
 		rendezvousNodes = append(rendezvousNodes, r.Addr())
 	}
-	for _, p := range c.running[RendezvousBoot] {
-		rendezvousNodes = append(rendezvousNodes, p.(Rendezvous).Addr())
+	if opts.RendezvousNodes == nil {
+		for _, p := range c.running[RendezvousBoot] {
+			rendezvousNodes = append(rendezvousNodes, p.(Rendezvous).Addr())
+		}
 	}
 
 	for i := relay; i < relay+opts.Relay; i++ {
@@ -241,6 +247,15 @@ func (c *Cluster) GetBootnode(n int) Bootnode {
 		return Bootnode{}
 	}
 	return c.running[Boot][n].(Bootnode)
+}
+
+func (c *Cluster) GetRendezvous(n int) Rendezvous {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[RendezvousBoot])-1 {
+		return Rendezvous{}
+	}
+	return c.running[RendezvousBoot][n].(Rendezvous)
 }
 
 func (c *Cluster) Reboot(ctx context.Context, t PeerType) error {
