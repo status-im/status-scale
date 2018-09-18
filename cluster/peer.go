@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/status-im/status-go/params"
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/network"
 	"github.com/status-im/status-scale/whisper"
@@ -28,6 +32,11 @@ func DefaultConfig() PeerConfig {
 		Discovery: true,
 	}
 }
+
+const (
+	tmpSuffix       = "scale-peer-%s-"
+	containerConfig = "/conf.json"
+)
 
 func NewPeer(config PeerConfig, backend Backend) *Peer {
 	return &Peer{name: config.Name, config: config, backend: backend}
@@ -61,6 +70,8 @@ type Peer struct {
 	backend Backend
 
 	client *rpc.Client
+
+	hostConfig string
 }
 
 func (p *Peer) String() string {
@@ -68,54 +79,71 @@ func (p *Peer) String() string {
 }
 
 func (p *Peer) Create(ctx context.Context) error {
-	cmd := []string{"statusd"}
-	var exposed []string
-	if p.config.Whisper {
-		cmd = append(cmd, "-shh")
-	}
-	if p.config.HTTP {
-		cmd = append(cmd, "-http")
-		if len(p.config.Host) != 0 {
-			cmd = append(cmd, "-httphost="+p.config.Host)
-		}
-		if p.config.Port != 0 {
-			cmd = append(cmd, "-httpport="+strconv.Itoa(p.config.Port))
-			exposed = append(exposed, strconv.Itoa(p.config.Port))
-		}
-		if len(p.config.Modules) != 0 {
-			cmd = append(cmd, "-httpmodules="+strings.Join(p.config.Modules, ","))
-		}
-	}
-	cmd = append(cmd, "-debug")
+	cmd := []string{"statusd", "-c", containerConfig, "-log", "debug"}
 	if p.config.Metrics {
 		cmd = append(cmd, "-metrics")
 	}
-	if len(p.config.BootNodes) != 0 {
-		cmd = append(cmd, "-discovery=true")
-		cmd = append(cmd, "-bootnodes="+strings.Join(p.config.BootNodes, ","))
+	cfg, err := params.NewNodeConfig("", "", 0)
+	if err != nil {
+		return err
 	}
-	if len(p.config.RendezvousNodes) != 0 {
-		cmd = append(cmd, "-rendezvous=true")
-		for _, n := range p.config.RendezvousNodes {
-			cmd = append(cmd, "-rendezvous-node="+n)
+	cfg.LogEnabled = true
+	cfg.LogToStderr = true
+	cfg.LogLevel = "DEBUG"
+	// Should go to file
+	var exposed []string
+	if p.config.Whisper {
+		cfg.WhisperConfig.Enabled = true
+		cfg.WhisperConfig.EnableNTPSync = true
+	}
+	if p.config.HTTP {
+		if len(p.config.Host) != 0 {
+			cfg.HTTPHost = p.config.Host
+		}
+		if p.config.Port != 0 {
+			cfg.HTTPPort = p.config.Port
+			exposed = append(exposed, strconv.Itoa(p.config.Port))
+		}
+		if len(p.config.Modules) != 0 {
+			cfg.APIModules = strings.Join(p.config.Modules, ",")
 		}
 	}
-	if !p.config.Standalone {
-		cmd = append(cmd, "-standalone=false")
+	cfg.DebugAPIEnabled = true
+	cfg.ClusterConfig.Enabled = true
+	if len(p.config.BootNodes) != 0 {
+		cfg.NoDiscovery = false
+		cfg.ClusterConfig.BootNodes = p.config.BootNodes
 	}
-	if p.config.NetworkID != 0 {
-		cmd = append(cmd, "-networkid="+strconv.Itoa(p.config.NetworkID))
+	if len(p.config.RendezvousNodes) != 0 {
+		cfg.Rendezvous = true
+		cfg.ClusterConfig.RendezvousNodes = p.config.RendezvousNodes
 	}
 	for _, topic := range p.config.TopicRegister {
-		cmd = append(cmd, strings.Join([]string{"-topic.register", topic}, "="))
+		cfg.RegisterTopics = append(cfg.RegisterTopics, discv5.Topic(topic))
 	}
 	for topic, args := range p.config.TopicSearch {
-		cmd = append(cmd, strings.Join([]string{"-topic.search", topic, args}, "="))
+		limits := strings.Split(args, ",")
+		min, _ := strconv.Atoi(limits[0])
+		max, _ := strconv.Atoi(limits[1])
+		cfg.RequireTopics[discv5.Topic(topic)] = params.Limits{Min: min, Max: max}
 	}
-	cmd = append(cmd, "-log", "debug")
-	cmd = append(cmd, "-listenaddr", fmt.Sprintf("%s:30303", p.IP()))
+	cfg.ListenAddr = fmt.Sprintf("%s:30303", p.IP())
 	log.Debug("Create statusd", "name", p.name, "command", strings.Join(cmd, " "))
-	err := p.backend.Create(ctx, p.name, dockershim.CreateOpts{
+	bytes, err := json.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config file to json: %v", err)
+	}
+	f, err := ioutil.TempFile("", fmt.Sprintf(tmpSuffix, p.name))
+	if err != nil {
+		return fmt.Errorf("error creating temp file for container %s: %v", p.name, err)
+	}
+	defer f.Close()
+	p.hostConfig = f.Name()
+	if _, err := f.Write(bytes); err != nil {
+		return fmt.Errorf("error writing config file to %s: %v", f.Name(), err)
+	}
+	log.Debug("Create statusd", "name", p.name, "command", strings.Join(cmd, " "), "config", f.Name())
+	err = p.backend.Create(ctx, p.name, dockershim.CreateOpts{
 		Cmd:   cmd,
 		Image: p.config.Image,
 		Ports: exposed,
@@ -123,6 +151,8 @@ func (p *Peer) Create(ctx context.Context) error {
 			IP:    p.config.IP,
 			NetID: p.config.NetID,
 		}},
+		HostConfigPath:      p.hostConfig,
+		ContainerConfigPath: containerConfig,
 	})
 	if err != nil {
 		return err
@@ -136,6 +166,11 @@ func (p *Peer) Create(ctx context.Context) error {
 
 func (p Peer) Remove(ctx context.Context) error {
 	log.Debug("removing statusd", "name", p.name)
+	if len(p.hostConfig) > 0 {
+		if err := os.Remove(p.hostConfig); err != nil {
+			log.Error("error removing config file on host", "path", p.hostConfig, "error", err)
+		}
+	}
 	return p.backend.Remove(ctx, p.name)
 }
 
