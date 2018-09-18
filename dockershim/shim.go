@@ -10,6 +10,7 @@ import (
 	docker "docker.io/go-docker"
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
+	"docker.io/go-docker/api/types/mount"
 	"docker.io/go-docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 )
@@ -27,11 +28,13 @@ type IpOpts struct {
 }
 
 type CreateOpts struct {
-	Entrypoint string
-	Cmd        []string
-	Image      string
-	IPs        map[string]IpOpts
-	Ports      []string
+	Entrypoint          string
+	Cmd                 []string
+	HostConfigPath      string
+	ContainerConfigPath string
+	Image               string
+	IPs                 map[string]IpOpts
+	Ports               []string
 }
 
 type NetOpts struct {
@@ -104,6 +107,13 @@ func (p DockerShim) Create(ctx context.Context, id string, opts CreateOpts) erro
 		ExposedPorts: ports,
 	}, &container.HostConfig{
 		PortBindings: portsMap,
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: opts.HostConfigPath,
+				Target: opts.ContainerConfigPath,
+			},
+		},
 	}, &network.NetworkingConfig{
 		EndpointsConfig: endpoints,
 	}, id)
