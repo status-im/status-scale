@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/whisper/shhclient"
 
 	"github.com/status-im/status-go/params"
 	"github.com/status-im/status-scale/dockershim"
@@ -205,7 +206,7 @@ func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
 	if len(ports) < 1 {
 		return nil, fmt.Errorf("peer %s doesn't have any bindings", p.name)
 	}
-	// can use any
+	// can use any from list of ports, but verify the length
 	rawurl := fmt.Sprintf("http://%s:%s", ports[0].HostIP, ports[0].HostPort)
 	log.Debug("init rpc client", "name", p.name, "url", rawurl)
 	return rpc.DialContext(ctx, rawurl)
@@ -215,8 +216,13 @@ func (p Peer) Admin() Admin {
 	return Admin{client: p.client}
 }
 
+// TODO rename it to WhisperExtended
 func (p Peer) Whisper() *whisper.Client {
 	return whisper.New(p.client)
+}
+
+func (p Peer) WhisperOriginal() *shhclient.Client {
+	return shhclient.NewClient(p.client)
 }
 
 func (p Peer) UID() string {

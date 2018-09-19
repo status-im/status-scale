@@ -121,14 +121,17 @@
   digest = "1:d670c508dc01984c721d0d968936412e3edcd8ca58caf82fcfd0df9044013a0f"
   name = "github.com/ethereum/go-ethereum"
   packages = [
+    ".",
     "common",
     "common/hexutil",
     "common/math",
     "common/mclock",
+    "core/types",
     "crypto",
     "crypto/ecies",
     "crypto/secp256k1",
     "crypto/sha3",
+    "ethdb",
     "event",
     "log",
     "metrics",
@@ -140,6 +143,8 @@
     "params",
     "rlp",
     "rpc",
+    "trie",
+    "whisper/shhclient",
     "whisper/whisperv6",
   ]
   pruneopts = "T"
@@ -516,6 +521,14 @@
 
 [[projects]]
   branch = "v2"
+  digest = "1:dae137be246befa42ce4b48c0feff2c5796b8a5027139a283f31a21173744410"
+  name = "gopkg.in/karalabe/cookiejar.v2"
+  packages = ["collections/prque"]
+  pruneopts = "T"
+  revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
+
+[[projects]]
+  branch = "v2"
   digest = "1:3d3f9391ab615be8655ae0d686a1564f3fec413979bb1aaf018bac1ec1bb1cc7"
   name = "gopkg.in/natefinch/npipe.v2"
   packages = ["."]
@@ -540,6 +553,7 @@
     "github.com/ethereum/go-ethereum/p2p",
     "github.com/ethereum/go-ethereum/p2p/discv5",
     "github.com/ethereum/go-ethereum/rpc",
+    "github.com/ethereum/go-ethereum/whisper/shhclient",
     "github.com/ethereum/go-ethereum/whisper/whisperv6",
     "github.com/libp2p/go-libp2p-crypto",
     "github.com/libp2p/go-libp2p-peer",

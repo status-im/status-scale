@@ -255,6 +255,15 @@ func (c *Cluster) GetRelay(n int) *Peer {
 	return c.running[Relay][n].(*Peer)
 }
 
+func (c *Cluster) GetUser(n int) *Peer {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[User])-1 {
+		return nil
+	}
+	return c.running[User][n].(*Peer)
+}
+
 func (c *Cluster) GetBootnode(n int) Bootnode {
 	c.mu.Lock()
 	defer c.mu.Unlock()
