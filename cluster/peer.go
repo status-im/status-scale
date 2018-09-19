@@ -61,6 +61,8 @@ type PeerConfig struct {
 	TopicRegister   []string
 	Discovery       bool
 	Standalone      bool
+	Egress, Ingress params.RateLimitConfig
+	IgnoreEgress    bool
 }
 
 type Peer struct {
@@ -79,7 +81,7 @@ func (p *Peer) String() string {
 }
 
 func (p *Peer) Create(ctx context.Context) error {
-	cmd := []string{"statusd", "-c", containerConfig, "-log", "debug"}
+	cmd := []string{"statusd", "-c", containerConfig}
 	if p.config.Metrics {
 		cmd = append(cmd, "-metrics")
 	}
@@ -95,6 +97,9 @@ func (p *Peer) Create(ctx context.Context) error {
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true
 		cfg.WhisperConfig.EnableNTPSync = true
+		cfg.WhisperConfig.EgressRateLimit = p.config.Egress
+		cfg.WhisperConfig.IngressRateLimit = p.config.Ingress
+		cfg.WhisperConfig.IgnoreEgressLimit = p.config.IgnoreEgress
 	}
 	if p.config.HTTP {
 		if len(p.config.Host) != 0 {

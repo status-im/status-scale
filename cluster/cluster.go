@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/status-im/status-go/params"
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/metrics"
 )
@@ -39,6 +40,12 @@ type ScaleOpts struct {
 	Deploy          bool
 	Enodes          []string
 	RendezvousNodes []string
+
+	// TODO this values don't belong here. need a way to parametrize single scale operation
+	// in an isolated way. e.g. different options per type of deployed object
+	UserEgress, UserIngress   params.RateLimitConfig
+	RelayEgress, RelayIngress params.RateLimitConfig
+	IgnoreEgress              bool
 }
 
 const (
@@ -168,6 +175,10 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.RendezvousNodes = rendezvousNodes
+		cfg.Modules = []string{"shh", "admin", "debug", "sshext"}
+		cfg.Egress = opts.RelayEgress
+		cfg.Ingress = opts.RelayEgress
+		cfg.IgnoreEgress = opts.IgnoreEgress
 		cfg.Image = c.Statusd
 		cfg.TopicSearch = map[string]string{
 			"whisper": "5,7",
@@ -185,6 +196,10 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.RendezvousNodes = rendezvousNodes
+		cfg.Modules = []string{"shh", "admin", "debug", "sshext"}
+		cfg.Egress = opts.RelayEgress
+		cfg.Ingress = opts.RelayEgress
+		cfg.IgnoreEgress = opts.IgnoreEgress
 		cfg.TopicSearch = map[string]string{
 			"whisper": "2,2",
 		}
