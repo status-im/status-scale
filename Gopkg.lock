@@ -381,15 +381,15 @@
   version = "v1.1"
 
 [[projects]]
-  digest = "1:6c192739dc8e1b80f2d98f61a72632eb777cf8a2d49a6d61a4d341897610e940"
+  branch = "topic-traffic"
+  digest = "1:0ea9aa3f25dd237ff2edcfd7e7dd823c5826d58364019b070ea440391c655428"
   name = "github.com/status-im/status-go"
   packages = [
     "params",
     "static",
   ]
   pruneopts = "T"
-  revision = "5b98b8831b63ef6b79635d9df1bc8291ed47dfd5"
-  version = "v0.15.0"
+  revision = "227d62e7d22ab38ac0052a12a120f587fca665e7"
 
 [[projects]]
   digest = "1:8f39978e4fb2a11d43cc954f2ab458cb38995d4c1557b6d3a7c8cafe0ec2277c"

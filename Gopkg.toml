@@ -58,4 +58,4 @@
 
 [[constraint]]
   name = "github.com/status-im/status-go"
-  version = "0.15.0"
+  branch = "topic-traffic"
