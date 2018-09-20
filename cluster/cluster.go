@@ -45,6 +45,7 @@ type ScaleOpts struct {
 	// in an isolated way. e.g. different options per type of deployed object
 	UserEgress, UserIngress   params.RateLimitConfig
 	RelayEgress, RelayIngress params.RateLimitConfig
+	TopicLimit                params.RateLimitConfig
 	IgnoreEgress              bool
 }
 
@@ -170,6 +171,9 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 
 	for i := relay; i < relay+opts.Relay; i++ {
 		cfg := DefaultConfig()
+		cfg.HTTP = true
+		cfg.Host = "0.0.0.0"
+		cfg.Port = 8777
 		cfg.Name = c.getName(string(Relay), strconv.Itoa(i))
 		cfg.NetID = netID
 		cfg.IP = c.IPAM.Take().String()
@@ -179,6 +183,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.Egress = opts.RelayEgress
 		cfg.Ingress = opts.RelayEgress
 		cfg.IgnoreEgress = opts.IgnoreEgress
+		cfg.Topic = opts.TopicLimit
 		cfg.Image = c.Statusd
 		cfg.TopicSearch = map[string]string{
 			"whisper": "5,7",
@@ -190,6 +195,9 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	}
 	for i := users; i < users+opts.Users; i++ {
 		cfg := DefaultConfig()
+		cfg.HTTP = true
+		cfg.Host = "0.0.0.0"
+		cfg.Port = 8777
 		cfg.Name = c.getName(string(User), strconv.Itoa(i))
 		cfg.NetID = netID
 		cfg.Image = c.Statusd
@@ -199,6 +207,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.Modules = []string{"shh", "admin", "debug", "sshext"}
 		cfg.Egress = opts.RelayEgress
 		cfg.Ingress = opts.RelayEgress
+		cfg.Topic = opts.TopicLimit
 		cfg.IgnoreEgress = opts.IgnoreEgress
 		cfg.TopicSearch = map[string]string{
 			"whisper": "2,2",

@@ -49,21 +49,21 @@ type PeerConfig struct {
 	IP    string
 	Image string
 
-	Modules         []string
-	Whisper         bool
-	BootNodes       []string
-	RendezvousNodes []string
-	NetworkID       int
-	HTTP            bool
-	Port            int
-	Host            string
-	Metrics         bool
-	TopicSearch     map[string]string
-	TopicRegister   []string
-	Discovery       bool
-	Standalone      bool
-	Egress, Ingress params.RateLimitConfig
-	IgnoreEgress    bool
+	Modules                []string
+	Whisper                bool
+	BootNodes              []string
+	RendezvousNodes        []string
+	NetworkID              int
+	HTTP                   bool
+	Port                   int
+	Host                   string
+	Metrics                bool
+	TopicSearch            map[string]string
+	TopicRegister          []string
+	Discovery              bool
+	Standalone             bool
+	Egress, Ingress, Topic params.RateLimitConfig
+	IgnoreEgress           bool
 }
 
 type Peer struct {
@@ -90,9 +90,13 @@ func (p *Peer) Create(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	cfg.RPCEnabled = true
 	cfg.LogEnabled = true
 	cfg.LogToStderr = true
 	cfg.LogLevel = "DEBUG"
+	cfg.NetworkID = 110
+	cfg.DataDir = "/data"
+	cfg.KeyStoreDir = "/keystore"
 	// Should go to file
 	var exposed []string
 	if p.config.Whisper {
@@ -101,6 +105,7 @@ func (p *Peer) Create(ctx context.Context) error {
 		cfg.WhisperConfig.EgressRateLimit = p.config.Egress
 		cfg.WhisperConfig.IngressRateLimit = p.config.Ingress
 		cfg.WhisperConfig.IgnoreEgressLimit = p.config.IgnoreEgress
+		cfg.WhisperConfig.TopicRateLimit = p.config.Topic
 	}
 	if p.config.HTTP {
 		if len(p.config.Host) != 0 {
@@ -116,9 +121,12 @@ func (p *Peer) Create(ctx context.Context) error {
 	}
 	cfg.DebugAPIEnabled = true
 	cfg.ClusterConfig.Enabled = true
+	cfg.ClusterConfig.Fleet = "my.fleet"
 	if len(p.config.BootNodes) != 0 {
 		cfg.NoDiscovery = false
 		cfg.ClusterConfig.BootNodes = p.config.BootNodes
+	} else {
+		cfg.NoDiscovery = true
 	}
 	if len(p.config.RendezvousNodes) != 0 {
 		cfg.Rendezvous = true
@@ -189,6 +197,21 @@ func (p Peer) EnableConditions(ctx context.Context, opts ...network.Options) err
 
 func (p Peer) IP() string {
 	return p.config.IP
+}
+
+func (p Peer) WaitConnected(ctx context.Context, min int, timeout time.Duration) error {
+	start := time.Now()
+	period := timeout / 10
+	for time.Since(start) < timeout {
+		peers, err := p.Admin().Peers(ctx)
+		if err == nil && len(peers) >= min {
+			return nil
+		}
+		time.Sleep(period)
+	}
+	err := fmt.Errorf("peer %s failed to connect with %d peers over %v", p.name, min, timeout)
+	log.Debug("failed to connect with peers", "error", err)
+	return err
 }
 
 func (p Peer) DisableConditions(ctx context.Context, opts ...network.Options) error {
