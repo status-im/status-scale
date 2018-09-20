@@ -100,6 +100,15 @@ func (p DockerShim) Create(ctx context.Context, id string, opts CreateOpts) erro
 	if err != nil {
 		return err
 	}
+	var mounts []mount.Mount
+	if opts.HostConfigPath != "" && opts.ContainerConfigPath != "" {
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: opts.HostConfigPath,
+			Target: opts.ContainerConfigPath,
+		})
+	}
+
 	_, err = p.client.ContainerCreate(ctx, &container.Config{
 		Entrypoint:   []string{opts.Entrypoint},
 		Cmd:          opts.Cmd,
@@ -107,13 +116,7 @@ func (p DockerShim) Create(ctx context.Context, id string, opts CreateOpts) erro
 		ExposedPorts: ports,
 	}, &container.HostConfig{
 		PortBindings: portsMap,
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeBind,
-				Source: opts.HostConfigPath,
-				Target: opts.ContainerConfigPath,
-			},
-		},
+		Mounts:       mounts,
 	}, &network.NetworkingConfig{
 		EndpointsConfig: endpoints,
 	}, id)
