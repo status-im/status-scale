@@ -179,7 +179,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.RendezvousNodes = rendezvousNodes
-		cfg.Modules = []string{"shh", "admin", "debug", "sshext"}
+		cfg.Modules = []string{"shh", "admin", "debug", "shhext"}
 		cfg.Egress = opts.RelayEgress
 		cfg.Ingress = opts.RelayEgress
 		cfg.IgnoreEgress = opts.IgnoreEgress
@@ -204,10 +204,11 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.RendezvousNodes = rendezvousNodes
-		cfg.Modules = []string{"shh", "admin", "debug", "sshext"}
+		cfg.Modules = []string{"shh", "admin", "debug", "shhext"}
 		cfg.Egress = opts.RelayEgress
 		cfg.Ingress = opts.RelayEgress
 		cfg.Topic = opts.TopicLimit
+		cfg.LightClient = true
 		cfg.IgnoreEgress = opts.IgnoreEgress
 		cfg.TopicSearch = map[string]string{
 			"whisper": "2,2",

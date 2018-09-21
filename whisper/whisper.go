@@ -19,6 +19,10 @@ func (c *Client) Post(msg whisperv6.NewMessage) (hash common.Hash, err error) {
 	return
 }
 
+func (c *Client) Drained(topic whisperv6.TopicType) (rst bool, err error) {
+	return rst, c.rpcClient.Call(&rst, "shhext_drained", topic)
+}
+
 func (c *Client) DebugPost(msg whisperv6.NewMessage) (hash common.Hash, err error) {
 	err = c.rpcClient.Call(&hash, "debug_postSync", msg)
 	return

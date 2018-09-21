@@ -27,7 +27,7 @@ func DefaultConfig() PeerConfig {
 		Metrics:   true,
 		HTTP:      true,
 		Host:      "0.0.0.0",
-		Modules:   []string{"admin", "debug", "shh", "net"},
+		Modules:   []string{"admin", "debug", "shh", "net", "shhext"},
 		Port:      8545,
 		NetworkID: 100,
 		Discovery: true,
@@ -51,6 +51,7 @@ type PeerConfig struct {
 
 	Modules                []string
 	Whisper                bool
+	LightClient            bool
 	BootNodes              []string
 	RendezvousNodes        []string
 	NetworkID              int
@@ -106,6 +107,7 @@ func (p *Peer) Create(ctx context.Context) error {
 		cfg.WhisperConfig.IngressRateLimit = p.config.Ingress
 		cfg.WhisperConfig.IgnoreEgressLimit = p.config.IgnoreEgress
 		cfg.WhisperConfig.TopicRateLimit = p.config.Topic
+		cfg.WhisperConfig.LightClient = p.config.LightClient
 	}
 	if p.config.HTTP {
 		if len(p.config.Host) != 0 {
@@ -202,14 +204,16 @@ func (p Peer) IP() string {
 func (p Peer) WaitConnected(ctx context.Context, min int, timeout time.Duration) error {
 	start := time.Now()
 	period := timeout / 10
+	lth := 0
 	for time.Since(start) < timeout {
 		peers, err := p.Admin().Peers(ctx)
+		lth = len(peers)
 		if err == nil && len(peers) >= min {
 			return nil
 		}
 		time.Sleep(period)
 	}
-	err := fmt.Errorf("peer %s failed to connect with %d peers over %v", p.name, min, timeout)
+	err := fmt.Errorf("peer %s failed to connect with %d peers over %v. connections num %d.", p.name, min, timeout, lth)
 	log.Debug("failed to connect with peers", "error", err)
 	return err
 }
