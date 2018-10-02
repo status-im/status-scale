@@ -10,9 +10,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/whisper/whisperv6"
-	"github.com/status-im/status-go/params"
 	"github.com/status-im/status-scale/cluster"
 	"github.com/status-im/status-scale/metrics"
+	"github.com/status-im/whisper/ratelimiter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,20 +22,15 @@ import (
 // 2nd round spammer generates messages and users receive them
 // how fast we disconnect, what would be % of usefull lost messages
 func TestGeneralWhisperRateLimiting(t *testing.T) {
-	userLimit := params.RateLimitConfig{
+	userLimit := &ratelimiter.Config{
 		Interval: uint64(time.Second),
 		Capacity: 1 << 20,  // 1mb - surge of 35k envelopes per single connection
 		Quantum:  29 << 10, // 29kb - 98 envelopes per second
 	}
-	relayLimit := params.RateLimitConfig{
+	relayLimit := &ratelimiter.Config{
 		Interval: uint64(time.Second),
 		Capacity: 50 << 20,  // 50mb, surge of ~170k envelopes per single connection
 		Quantum:  292 << 10, // 1000 envelopes per second. 292kb
-	}
-	topicLimit := params.RateLimitConfig{
-		Interval: uint64(2 * time.Second),
-		Capacity: 100 << 10,
-		Quantum:  10 << 10,
 	}
 	c := ClusterFromConfig()
 	users := 10
@@ -46,7 +41,6 @@ func TestGeneralWhisperRateLimiting(t *testing.T) {
 		RelayEgress:  relayLimit,
 		UserIngress:  userLimit,
 		UserEgress:   userLimit,
-		TopicLimit:   topicLimit,
 		Deploy:       true}))
 	defer c.Clean(context.TODO())
 
@@ -147,18 +141,9 @@ func TestGeneralWhisperRateLimiting(t *testing.T) {
 	printMetrics(t, c)
 
 	log.Debug("deploy spammer and setup static connections with every relay node")
-	spammerLimits := params.RateLimitConfig{
-		Interval: uint64(time.Second),
-		Capacity: 10 << 30,
-		Quantum:  10 << 20,
-	}
 	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{
 		Relay:           2,
 		RendezvousNodes: []string{},
-		RelayIngress:    spammerLimits,
-		RelayEgress:     spammerLimits,
-		TopicLimit:      spammerLimits,
-		IgnoreEgress:    true,
 		Deploy:          true}))
 	for i := 0; i < users; i++ {
 		shh := c.GetUser(i).WhisperOriginal()
@@ -185,23 +170,6 @@ func TestGeneralWhisperRateLimiting(t *testing.T) {
 		peerCommunication(255, spammer, 100*time.Millisecond, 50<<10, map[int]int{}, &ignore, &sync.Mutex{}, spam)
 	}
 	connectAndSpam(count, 4)
-	printMetrics(t, c)
-	for i := 0; i < users; i++ {
-		rst, err := c.GetUser(i).Whisper().Drained(spam)
-		assert.NoError(t, err)
-		log.Info("is spam topic drained?", "peer", i, "rst", rst)
-	}
-
-	log.Info("ROUND 3: normal communication during spam")
-	total = 0
-	count = map[int]int{}
-	go func() {
-		connectAndSpam(count, 5)
-	}()
-	communicationRound(count, &total)
-	for i, m := range count {
-		log.Info("", "peer", i, "received", m, "total", total)
-	}
 	printMetrics(t, c)
 
 }

@@ -45,10 +45,6 @@
   name = "github.com/olekukonko/tablewriter"
 
 [[constraint]]
-  name = "github.com/ethereum/go-ethereum"
-  version = "v1.8.11"
-
-[[constraint]]
   name = "github.com/libp2p/go-libp2p-crypto"
   version = "1.6.2"
 
@@ -57,5 +53,14 @@
   version = "2.3.5"
 
 [[constraint]]
+  name = "github.com/ethereum/go-ethereum"
+  version = "=v1.8.16"
+  source = "github.com/status-im/go-ethereum"
+
+[[constraint]]
   name = "github.com/status-im/status-go"
-  branch = "topic-traffic"
+  branch = "ratelimiter"
+
+[[constraint]]
+  name = "github.com/status-im/whisper"
+  branch = "ratelimiter"

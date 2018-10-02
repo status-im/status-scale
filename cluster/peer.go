@@ -19,6 +19,7 @@ import (
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/network"
 	"github.com/status-im/status-scale/whisper"
+	"github.com/status-im/whisper/ratelimiter"
 )
 
 func DefaultConfig() PeerConfig {
@@ -63,7 +64,7 @@ type PeerConfig struct {
 	TopicRegister          []string
 	Discovery              bool
 	Standalone             bool
-	Egress, Ingress, Topic params.RateLimitConfig
+	Egress, Ingress, Topic *ratelimiter.Config
 	IgnoreEgress           bool
 }
 
@@ -87,26 +88,29 @@ func (p *Peer) Create(ctx context.Context) error {
 	if p.config.Metrics {
 		cmd = append(cmd, "-metrics")
 	}
-	cfg, err := params.NewNodeConfig("", "", 0)
+	cfg, err := params.NewNodeConfig("", 0)
 	if err != nil {
 		return err
 	}
-	cfg.RPCEnabled = true
+	cfg.HTTPEnabled = true
 	cfg.LogEnabled = true
 	cfg.LogToStderr = true
 	cfg.LogLevel = "DEBUG"
 	cfg.NetworkID = 110
 	cfg.DataDir = "/data"
 	cfg.KeyStoreDir = "/keystore"
+	cfg.BackupDisabledDataDir = "/backup-disabled"
 	// Should go to file
 	var exposed []string
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true
 		cfg.WhisperConfig.EnableNTPSync = true
-		cfg.WhisperConfig.EgressRateLimit = p.config.Egress
-		cfg.WhisperConfig.IngressRateLimit = p.config.Ingress
-		cfg.WhisperConfig.IgnoreEgressLimit = p.config.IgnoreEgress
-		cfg.WhisperConfig.TopicRateLimit = p.config.Topic
+		if p.config.Egress != nil {
+			cfg.WhisperConfig.EgressConfig = p.config.Egress
+		}
+		if p.config.Ingress != nil {
+			cfg.WhisperConfig.IngressConfig = p.config.Ingress
+		}
 		cfg.WhisperConfig.LightClient = p.config.LightClient
 	}
 	if p.config.HTTP {

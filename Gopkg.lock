@@ -118,7 +118,7 @@
   version = "v0.3.3"
 
 [[projects]]
-  digest = "1:d670c508dc01984c721d0d968936412e3edcd8ca58caf82fcfd0df9044013a0f"
+  digest = "1:cf53a6be6cf3d947c0c7fb678237a7b34e06e4102411ecb843eedacb46759995"
   name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
@@ -126,6 +126,7 @@
     "common/hexutil",
     "common/math",
     "common/mclock",
+    "common/prque",
     "core/types",
     "crypto",
     "crypto/ecies",
@@ -148,8 +149,9 @@
     "whisper/whisperv6",
   ]
   pruneopts = "T"
-  revision = "316fc7ecfc10d06603f1358c1f4c1020ec36dd2a"
-  version = "v1.8.14"
+  revision = "56c2fa69e0224e8f939a092b3aba20b23bb95c26"
+  source = "github.com/status-im/go-ethereum"
+  version = "v1.8.16"
 
 [[projects]]
   digest = "1:9786ddd8ff742e4ad1d8b68f9b1d551584fac49009d5a1680bfb8f812ed1c0ff"
@@ -185,6 +187,14 @@
   pruneopts = "T"
   revision = "100ba4e885062801d56799d78530b73b178a78f3"
   version = "v0.4"
+
+[[projects]]
+  digest = "1:db4ee29dee022c4cd49908553e35dd1c1c01ac56273bdf0c66a18bfba2eead30"
+  name = "github.com/golang/mock"
+  packages = ["gomock"]
+  pruneopts = "T"
+  revision = "c34cdb4725f4c3844d095133c6e40e448b86589b"
+  version = "v1.1.1"
 
 [[projects]]
   branch = "master"
@@ -238,6 +248,14 @@
   pruneopts = "T"
   revision = "c9cfead9f2a36ddf3daa40ba269aa7f4bbba6b62"
   version = "v1.0.1"
+
+[[projects]]
+  digest = "1:190ff84d9b2ed6589088f178cba8edb4b8ecb334df4572421fb016be1ac20463"
+  name = "github.com/juju/ratelimit"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
+  version = "1.0.1"
 
 [[projects]]
   digest = "1:2c71b4da363790b68aaeb609fa0da5ca78564d2484885de264d568718e7d9e21"
@@ -386,15 +404,23 @@
   version = "v1.1"
 
 [[projects]]
-  branch = "topic-traffic"
-  digest = "1:0ea9aa3f25dd237ff2edcfd7e7dd823c5826d58364019b070ea440391c655428"
+  branch = "ratelimiter"
+  digest = "1:bdb51492dd24e62aee0fed802d16bf91ffab589a2cb39b09a8634cdebeabc56f"
   name = "github.com/status-im/status-go"
   packages = [
     "params",
     "static",
   ]
   pruneopts = "T"
-  revision = "227d62e7d22ab38ac0052a12a120f587fca665e7"
+  revision = "1e736e1c23cbb5452621671ac21ac12ab0238468"
+
+[[projects]]
+  branch = "ratelimiter"
+  digest = "1:0b7c0f8f3ea7b97084255f91e96c739672c6b9da31514f139ed6afaaf02b3ec9"
+  name = "github.com/status-im/whisper"
+  packages = ["ratelimiter"]
+  pruneopts = "T"
+  revision = "ffcf1b3cc04a2a3cad6b56bfca987fdee935d473"
 
 [[projects]]
   digest = "1:8f39978e4fb2a11d43cc954f2ab458cb38995d4c1557b6d3a7c8cafe0ec2277c"
@@ -521,14 +547,6 @@
 
 [[projects]]
   branch = "v2"
-  digest = "1:dae137be246befa42ce4b48c0feff2c5796b8a5027139a283f31a21173744410"
-  name = "gopkg.in/karalabe/cookiejar.v2"
-  packages = ["collections/prque"]
-  pruneopts = "T"
-  revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
-
-[[projects]]
-  branch = "v2"
   digest = "1:3d3f9391ab615be8655ae0d686a1564f3fec413979bb1aaf018bac1ec1bb1cc7"
   name = "gopkg.in/natefinch/npipe.v2"
   packages = ["."]
@@ -559,6 +577,8 @@
     "github.com/libp2p/go-libp2p-peer",
     "github.com/olekukonko/tablewriter",
     "github.com/status-im/status-go/params",
+    "github.com/status-im/whisper/ratelimiter",
+    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
   ]
   solver-name = "gps-cdcl"

@@ -11,9 +11,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/status-im/status-go/params"
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/metrics"
+	"github.com/status-im/whisper/ratelimiter"
 )
 
 // Fixme standardize access to bootnodes and peers
@@ -43,9 +43,9 @@ type ScaleOpts struct {
 
 	// TODO this values don't belong here. need a way to parametrize single scale operation
 	// in an isolated way. e.g. different options per type of deployed object
-	UserEgress, UserIngress   params.RateLimitConfig
-	RelayEgress, RelayIngress params.RateLimitConfig
-	TopicLimit                params.RateLimitConfig
+	UserEgress, UserIngress   *ratelimiter.Config
+	RelayEgress, RelayIngress *ratelimiter.Config
+	TopicLimit                *ratelimiter.Config
 	IgnoreEgress              bool
 }
 
