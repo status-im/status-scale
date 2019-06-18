@@ -19,11 +19,6 @@ func (c *Client) Post(msg whisperv6.NewMessage) (hash common.Hash, err error) {
 	return
 }
 
-func (c *Client) DebugPost(msg whisperv6.NewMessage) (hash common.Hash, err error) {
-	err = c.rpcClient.Call(&hash, "debug_postSync", msg)
-	return
-}
-
 func (c *Client) NewSymKey() (symID string, err error) {
 	err = c.rpcClient.Call(&symID, "shh_newSymKey")
 	return
