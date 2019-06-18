@@ -17,7 +17,7 @@ var (
 
 func init() {
 	flag.StringVar(&CONF.Prefix, "prefix", "tests", "prefix for containers")
-	flag.StringVar(&CONF.CIDR, "cidr", "10.0.170.0/24", "network cidr")
+	flag.StringVar(&CONF.CIDR, "cidr", "10.0.200.0/24", "network cidr")
 	flag.StringVar(&CONF.Verbosity, "ver", "info", "log level")
 	flag.BoolVar(&CONF.Keep, "keep", false, "keep cluster after tests")
 	flag.StringVar(&CONF.Statusd, "statusd", "statusteam/statusd-debug:latest", "image for status go with comcast")

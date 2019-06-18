@@ -79,11 +79,11 @@ func (p *Peer) String() string {
 }
 
 func (p *Peer) Create(ctx context.Context) error {
-	cmd := []string{"statusd", "-c", containerConfig, "-log", "debug"}
+	cmd := []string{"statusd", "-c", containerConfig}
 	if p.config.Metrics {
 		cmd = append(cmd, "-metrics")
 	}
-	cfg, err := params.NewNodeConfig("", "", 0)
+	cfg, err := params.NewNodeConfig("/status-data", 7777)
 	if err != nil {
 		return err
 	}
@@ -97,6 +97,7 @@ func (p *Peer) Create(ctx context.Context) error {
 		cfg.WhisperConfig.EnableNTPSync = true
 	}
 	if p.config.HTTP {
+		cfg.HTTPEnabled = true
 		if len(p.config.Host) != 0 {
 			cfg.HTTPHost = p.config.Host
 		}
@@ -108,8 +109,8 @@ func (p *Peer) Create(ctx context.Context) error {
 			cfg.APIModules = strings.Join(p.config.Modules, ",")
 		}
 	}
-	cfg.DebugAPIEnabled = true
 	cfg.ClusterConfig.Enabled = true
+	cfg.NoDiscovery = true
 	if len(p.config.BootNodes) != 0 {
 		cfg.NoDiscovery = false
 		cfg.ClusterConfig.BootNodes = p.config.BootNodes
@@ -197,6 +198,10 @@ func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, port := range ports {
+		log.Debug("host port for container", "name", p.name, "port", port.HostPort)
+	}
+
 	if len(ports) < 1 {
 		return nil, fmt.Errorf("peer %s doesn't have any bindings", p.name)
 	}
