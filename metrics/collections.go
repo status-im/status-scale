@@ -7,7 +7,6 @@ func P2PColumns() []interface{} {
 		ComputeColumn{"p2p/total", func(r Row) (interface{}, error) {
 			return r["p2p/inbound"].(int64) + r["p2p/outbound"].(int64), nil
 		}},
-		RawColumn{[]string{"p2p", "Peers", "Overall"}, "p2p/peers"},
 	}
 }
 

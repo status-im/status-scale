@@ -2,6 +2,8 @@ package cluster
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -26,7 +29,7 @@ func DefaultConfig() PeerConfig {
 		Metrics:   true,
 		HTTP:      true,
 		Host:      "0.0.0.0",
-		Modules:   []string{"admin", "debug", "shh", "net"},
+		Modules:   []string{"admin", "debug", "shh", "net", "ssm"},
 		Port:      8545,
 		NetworkID: 100,
 		Discovery: true,
@@ -38,8 +41,24 @@ const (
 	containerConfig = "/conf.json"
 )
 
-func NewPeer(config PeerConfig, backend Backend) *Peer {
-	return &Peer{name: config.Name, config: config, backend: backend}
+func NewStatusd(config PeerConfig, backend Backend) *Peer {
+	return NewPeer(config, backend, []string{"statusd", "-c", containerConfig})
+}
+
+func NewClient(config PeerConfig, backend Backend, identity *ecdsa.PrivateKey) *Client {
+	return &Client{Peer: NewPeer(config, backend,
+		[]string{"status-term-client", "-no-ui", "-node-config", containerConfig, "-keyhex", hex.EncodeToString(crypto.FromECDSA(identity))}),
+		Identity: identity,
+	}
+}
+
+type Client struct {
+	*Peer
+	Identity *ecdsa.PrivateKey
+}
+
+func NewPeer(config PeerConfig, backend Backend, cmd []string) *Peer {
+	return &Peer{baseCmd: cmd, name: config.Name, config: config, backend: backend}
 }
 
 type PeerConfig struct {
@@ -64,8 +83,10 @@ type PeerConfig struct {
 }
 
 type Peer struct {
-	name   string
-	config PeerConfig
+	// copy before changing
+	baseCmd []string
+	name    string
+	config  PeerConfig
 
 	backend Backend
 
@@ -79,10 +100,8 @@ func (p *Peer) String() string {
 }
 
 func (p *Peer) Create(ctx context.Context) error {
-	cmd := []string{"statusd", "-c", containerConfig}
-	if p.config.Metrics {
-		cmd = append(cmd, "-metrics")
-	}
+	cmd := make([]string, len(p.baseCmd))
+	copy(cmd, p.baseCmd)
 	cfg, err := params.NewNodeConfig("/status-data", 7777)
 	if err != nil {
 		return err
@@ -90,7 +109,6 @@ func (p *Peer) Create(ctx context.Context) error {
 	cfg.LogEnabled = true
 	cfg.LogToStderr = true
 	cfg.LogLevel = "DEBUG"
-	// Should go to file
 	var exposed []string
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true
@@ -119,6 +137,7 @@ func (p *Peer) Create(ctx context.Context) error {
 		cfg.Rendezvous = true
 		cfg.ClusterConfig.RendezvousNodes = p.config.RendezvousNodes
 	}
+	cfg.ClusterConfig.TrustedMailServers = []string{"enode://da61e9eff86a56633b635f887d8b91e0ff5236bbc05b8169834292e92afb92929dcf6efdbf373a37903da8fe0384d5a0a8247e83f1ce211aa429200b6d28c548@47.91.156.93:30504"}
 	for _, topic := range p.config.TopicRegister {
 		cfg.RegisterTopics = append(cfg.RegisterTopics, discv5.Topic(topic))
 	}
@@ -217,6 +236,10 @@ func (p Peer) Admin() Admin {
 
 func (p Peer) Whisper() *whisper.Client {
 	return whisper.New(p.client)
+}
+
+func (p Peer) Chat() Chat {
+	return Chat{p.client}
 }
 
 func (p Peer) UID() string {
