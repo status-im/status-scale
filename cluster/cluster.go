@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/status-im/status-scale/dockershim"
@@ -27,6 +28,11 @@ type Removable interface {
 
 type Rebootable interface {
 	Reboot(context.Context) error
+}
+
+type MetricsDownloader interface {
+	UID() string
+	RawMetrics(context.Context) ([]byte, error)
 }
 
 type PeerType string
@@ -48,12 +54,13 @@ const (
 	RendezvousBoot PeerType = "rendezvous"
 )
 
-func NewCluster(pref string, ipam *IPAM, b Backend, statusd, bootnode, rendezvous string, keep bool) Cluster {
+func NewCluster(pref string, ipam *IPAM, b Backend, statusd, client, bootnode, rendezvous string, keep bool) Cluster {
 	c := Cluster{
 		Prefix:         pref,
 		IPAM:           ipam,
 		Backend:        b,
 		Statusd:        statusd,
+		Client:         client,
 		Bootnode:       bootnode,
 		RendezvousBoot: rendezvous,
 		Keep:           keep,
@@ -71,6 +78,7 @@ type Cluster struct {
 
 	// images
 	Statusd        string
+	Client         string
 	Bootnode       string
 	RendezvousBoot string
 
@@ -173,7 +181,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 			"whisper": "5,7",
 		}
 		cfg.TopicRegister = []string{"whisper"}
-		p := NewPeer(cfg, c.Backend)
+		p := NewStatusd(cfg, c.Backend)
 		log.Trace("adding relay peer to pending", "name", cfg.Name, "ip", cfg.IP)
 		c.pending[Relay] = append(c.pending[Relay], p)
 	}
@@ -181,14 +189,19 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(User), strconv.Itoa(i))
 		cfg.NetID = netID
-		cfg.Image = c.Statusd
+		cfg.Image = c.Client
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.RendezvousNodes = rendezvousNodes
 		cfg.TopicSearch = map[string]string{
 			"whisper": "2,2",
 		}
-		p := NewPeer(cfg, c.Backend)
+		identity, err := crypto.GenerateKey()
+		if err != nil {
+			return err
+		}
+		p := NewClient(cfg, c.Backend, identity)
+		log.Trace("adding user peer to pending", "name", cfg.Name, "ip", cfg.IP)
 		c.pending[User] = append(c.pending[User], p)
 	}
 	if opts.Deploy {
@@ -238,6 +251,24 @@ func (c *Cluster) GetRelay(n int) *Peer {
 		return nil
 	}
 	return c.running[Relay][n].(*Peer)
+}
+
+func (c *Cluster) GetPendingUser(n int) *Client {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.pending[User])-1 {
+		return nil
+	}
+	return c.pending[User][n].(*Client)
+}
+
+func (c *Cluster) GetUser(n int) *Client {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[User])-1 {
+		return nil
+	}
+	return c.running[User][n].(*Client)
 }
 
 func (c *Cluster) GetBootnode(n int) Bootnode {
@@ -314,7 +345,10 @@ func (c *Cluster) FillMetrics(ctx context.Context, tab *metrics.Table, opts Metr
 			g := g
 			i := i
 			r.Run(func() error {
-				p := c.running[g][i].(*Peer)
+				p, ok := c.running[g][i].(MetricsDownloader)
+				if !ok {
+					return nil
+				}
 				log.Debug("fetching metrics for", "peer", p.UID())
 				data, err := p.RawMetrics(ctx)
 				if err != nil {
