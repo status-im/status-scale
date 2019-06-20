@@ -7,14 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/status-im/status-go/params"
@@ -38,6 +42,8 @@ func DefaultConfig() PeerConfig {
 const (
 	tmpSuffix       = "scale-peer-%s-"
 	containerConfig = "/conf.json"
+
+	DefaultMailServerPassword = "status-offline-inbox"
 )
 
 func NewStatusd(config PeerConfig, backend Backend) *Peer {
@@ -66,6 +72,7 @@ type PeerConfig struct {
 	IP    string
 	Image string
 
+	Mailserver      bool
 	Modules         []string
 	Whisper         bool
 	BootNodes       []string
@@ -91,12 +98,17 @@ type Peer struct {
 	backend Backend
 
 	client *rpc.Client
+	enode  string
 
 	hostConfig string
 }
 
 func (p *Peer) String() string {
 	return fmt.Sprintf("peer %s %s", p.name, p.config.IP)
+}
+
+func (p *Peer) Enode() string {
+	return p.enode
 }
 
 func (p *Peer) Create(ctx context.Context) error {
@@ -112,6 +124,11 @@ func (p *Peer) Create(ctx context.Context) error {
 	var exposed []string
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true
+		if p.config.Mailserver {
+			cfg.WhisperConfig.EnableMailServer = true
+			cfg.WhisperConfig.DataDir = filepath.Join(cfg.DataDir, "mail")
+			cfg.WhisperConfig.MailServerPassword = DefaultMailServerPassword
+		}
 	}
 	if p.config.HTTP {
 		cfg.HTTPEnabled = true
@@ -244,17 +261,29 @@ func (p Peer) RawMetrics(ctx context.Context) ([]byte, error) {
 	return []byte(rst), err
 }
 
-func (p Peer) healthcheck(ctx context.Context, retries int, interval time.Duration) error {
+func (p *Peer) healthcheck(ctx context.Context, retries int, interval time.Duration) error {
 	log.Debug("running healthcheck", "peer", p.name)
-	var ignored struct{}
+	info := p2p.NodeInfo{}
 	for i := retries; i > 0; i-- {
-		// use deadline?
-		err := p.client.CallContext(ctx, &ignored, "admin_nodeInfo")
+		err := p.client.CallContext(ctx, &info, "admin_nodeInfo")
 		log.Trace("healtcheck", "peer", p.name, "tries", i, "error", err)
 		if err != nil {
 			time.Sleep(interval)
 			continue
 		}
+		log.Debug("received response from node info", "info", info)
+		// note(dshulyak) node can't discover its external ip and uses 127.0.0.1.
+		// we have to use preconfigured listen addr
+		node, err := enode.ParseV4(info.Enode)
+		if err != nil {
+			return err
+		}
+		parts := strings.Split(info.ListenAddr, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("failed to split %s into two parts uins `:`", info.ListenAddr)
+		}
+		p.enode = enode.NewV4(node.Pubkey(), net.ParseIP(parts[0]), info.Ports.Listener, info.Ports.Discovery).String()
+		log.Debug("received enode for", "name", p.name, "enode", p.enode)
 		return nil
 	}
 	return fmt.Errorf("peer %s failed healthcheck", p.name)
