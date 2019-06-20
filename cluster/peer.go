@@ -20,7 +20,6 @@ import (
 	"github.com/status-im/status-go/params"
 	"github.com/status-im/status-scale/dockershim"
 	"github.com/status-im/status-scale/network"
-	"github.com/status-im/status-scale/whisper"
 )
 
 func DefaultConfig() PeerConfig {
@@ -71,6 +70,7 @@ type PeerConfig struct {
 	Whisper         bool
 	BootNodes       []string
 	RendezvousNodes []string
+	Mailservers     []string
 	NetworkID       int
 	HTTP            bool
 	Port            int
@@ -112,7 +112,6 @@ func (p *Peer) Create(ctx context.Context) error {
 	var exposed []string
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true
-		cfg.WhisperConfig.EnableNTPSync = true
 	}
 	if p.config.HTTP {
 		cfg.HTTPEnabled = true
@@ -137,7 +136,7 @@ func (p *Peer) Create(ctx context.Context) error {
 		cfg.Rendezvous = true
 		cfg.ClusterConfig.RendezvousNodes = p.config.RendezvousNodes
 	}
-	cfg.ClusterConfig.TrustedMailServers = []string{"enode://da61e9eff86a56633b635f887d8b91e0ff5236bbc05b8169834292e92afb92929dcf6efdbf373a37903da8fe0384d5a0a8247e83f1ce211aa429200b6d28c548@47.91.156.93:30504"}
+	cfg.ClusterConfig.TrustedMailServers = p.config.Mailservers
 	for _, topic := range p.config.TopicRegister {
 		cfg.RegisterTopics = append(cfg.RegisterTopics, discv5.Topic(topic))
 	}
@@ -230,20 +229,12 @@ func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
 	return rpc.DialContext(ctx, rawurl)
 }
 
-func (p Peer) Admin() Admin {
-	return Admin{client: p.client}
-}
-
-func (p Peer) Whisper() *whisper.Client {
-	return whisper.New(p.client)
-}
-
-func (p Peer) Chat() Chat {
-	return Chat{p.client}
-}
-
 func (p Peer) UID() string {
 	return p.name
+}
+
+func (p Peer) Rpc() *rpc.Client {
+	return p.client
 }
 
 func (p Peer) RawMetrics(ctx context.Context) ([]byte, error) {

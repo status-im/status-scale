@@ -1,9 +1,7 @@
 package cluster
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/status-im/status-scale/dockershim"
-	"github.com/status-im/status-scale/metrics"
+	"github.com/status-im/status-scale/utils"
 )
 
 // Fixme standardize access to bootnodes and peers
@@ -28,11 +26,6 @@ type Removable interface {
 
 type Rebootable interface {
 	Reboot(context.Context) error
-}
-
-type MetricsDownloader interface {
-	UID() string
-	RawMetrics(context.Context) ([]byte, error)
 }
 
 type PeerType string
@@ -211,13 +204,13 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 }
 
 func (c *Cluster) DeployPending(ctx context.Context) error {
-	run := newRunner(len(c.pending[Boot]) + len(c.pending[Relay]) + len(c.pending[User]) + len(c.pending[RendezvousBoot]))
+	run := utils.NewGroup(ctx, len(c.pending[Boot])+len(c.pending[Relay])+len(c.pending[User])+len(c.pending[RendezvousBoot]))
 	for typ, peers := range c.pending {
 		log.Info("pending", "type", typ, "len", len(peers))
 		for i := range peers {
 			typ := typ
 			p := peers[i]
-			run.Run(func() error {
+			run.Run(func(ctx context.Context) error {
 				err := p.(Creatable).Create(ctx)
 				c.mu.Lock()
 				c.running[typ] = append(c.running[typ], p)
@@ -233,6 +226,22 @@ func (c *Cluster) DeployPending(ctx context.Context) error {
 	err := run.Error()
 	log.Debug("finished cluster deployment", "error", err)
 	return err
+}
+
+func (c *Cluster) GetRelays() []*Peer {
+	rst := make([]*Peer, len(c.running[Relay]))
+	for i := range c.running[Relay] {
+		rst[i] = c.running[Relay][i].(*Peer)
+	}
+	return rst
+}
+
+func (c *Cluster) GetUsers() []*Client {
+	rst := make([]*Client, len(c.running[User]))
+	for i := range c.running[User] {
+		rst[i] = c.running[User][i].(*Client)
+	}
+	return rst
 }
 
 func (c *Cluster) GetPendingRelay(n int) *Peer {
@@ -289,21 +298,6 @@ func (c *Cluster) GetRendezvous(n int) Rendezvous {
 	return c.running[RendezvousBoot][n].(Rendezvous)
 }
 
-func (c *Cluster) Reboot(ctx context.Context, t PeerType) error {
-	if _, ok := c.running[t]; !ok {
-		return fmt.Errorf("type %v not found in running", t)
-	}
-	r := newRunner(len(c.running[t]))
-	for i := range c.running[t] {
-		p := c.running[t][i].(Rebootable)
-		r.Run(func() error {
-			return p.Reboot(ctx)
-		})
-	}
-	return r.Error()
-
-}
-
 func (c *Cluster) Clean(ctx context.Context) {
 	if c.Keep {
 		return
@@ -320,81 +314,5 @@ func (c *Cluster) Clean(ctx context.Context) {
 	log.Debug("removing network", "id", c.netID, "name", c.getName("net"))
 	if err := c.Backend.RemoveNetwork(ctx, c.netID); err != nil {
 		log.Error("error removing", "network", c.getName("net"), "error", err)
-	}
-}
-
-type MetricsOpts struct {
-	NoRelay bool
-	NoUsers bool
-}
-
-func (c *Cluster) FillMetrics(ctx context.Context, tab *metrics.Table, opts MetricsOpts) error {
-	groups := []PeerType{}
-	n := 0
-	if !opts.NoRelay {
-		groups = append(groups, Relay)
-		n += len(c.running[Relay])
-	}
-	if !opts.NoUsers {
-		groups = append(groups, User)
-		n += len(c.running[User])
-	}
-	r := newRunner(n)
-	for _, g := range groups {
-		for i := range c.running[g] {
-			g := g
-			i := i
-			r.Run(func() error {
-				p, ok := c.running[g][i].(MetricsDownloader)
-				if !ok {
-					return nil
-				}
-				log.Debug("fetching metrics for", "peer", p.UID())
-				data, err := p.RawMetrics(ctx)
-				if err != nil {
-					return err
-				}
-				return tab.Append(p.UID(), data)
-			})
-		}
-	}
-	return r.Error()
-}
-
-func newRunner(n int) *runner {
-	r := &runner{}
-	r.wg.Add(n)
-	r.errors = make(chan error, n)
-	return r
-}
-
-type runner struct {
-	wg     sync.WaitGroup
-	errors chan error
-}
-
-func (r *runner) Run(f func() error) {
-	go func() {
-		r.errors <- f()
-		r.wg.Done()
-	}()
-}
-
-func (r *runner) Error() error {
-	r.wg.Wait()
-	var b bytes.Buffer
-	for {
-		select {
-		case err := <-r.errors:
-			if err != nil {
-				b.WriteString(err.Error())
-				b.WriteString("\n")
-			}
-		default:
-			if len(b.String()) != 0 {
-				return errors.New(b.String())
-			}
-			return nil
-		}
 	}
 }
