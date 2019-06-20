@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/status-im/status-console-client/protocol/gethservice"
+	"github.com/status-im/status-scale/client"
 	"github.com/status-im/status-scale/cluster"
 	"github.com/status-im/status-scale/metrics"
 	"github.com/stretchr/testify/require"
@@ -24,19 +25,19 @@ func TestClientsExample(t *testing.T) {
 	defer c.Clean(context.TODO())
 
 	Eventually(t, func() error {
-		peers, err := c.GetUser(0).Admin().Peers(context.TODO())
+		peers, err := client.AdminClient(c.GetUser(0).Rpc()).Peers(context.TODO())
 		log.Trace("waiting for 1 peer", "peers", len(peers), "err", err)
 		if err != nil {
 			return err
 		}
 		if len(peers) != 1 {
-			return fmt.Errorf("peers %+v expected to be %d", peersToIPs(peers), 2)
+			return fmt.Errorf("expecting connection with one peer")
 		}
 		return nil
 	}, 30*time.Second, 1*time.Second)
 
-	user0 := c.GetUser(0).Chat()
-	user1 := c.GetUser(1).Chat()
+	user0 := client.ChatClient(c.GetUser(0).Rpc())
+	user1 := client.ChatClient(c.GetUser(1).Rpc())
 
 	name := make([]byte, 10)
 	n, err := rand.Read(name)
@@ -62,6 +63,6 @@ func TestClientsExample(t *testing.T) {
 	}, 30*time.Second, 1*time.Second)
 
 	tab := metrics.NewCompleteTab("container", metrics.P2PColumns())
-	require.NoError(t, c.FillMetrics(context.TODO(), tab, cluster.MetricsOpts{NoRelay: true}))
+	require.NoError(t, client.CollectMetrics(context.TODO(), tab, c.GetUsers(), nil))
 	metrics.ToASCII(tab, os.Stdout).Render()
 }

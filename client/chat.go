@@ -1,4 +1,4 @@
-package cluster
+package client
 
 import (
 	"context"
@@ -7,6 +7,10 @@ import (
 	"github.com/status-im/status-console-client/protocol/gethservice"
 	"github.com/status-im/status-console-client/protocol/v1"
 )
+
+func ChatClient(client *rpc.Client) Chat {
+	return Chat{client}
+}
 
 type Chat struct {
 	client *rpc.Client

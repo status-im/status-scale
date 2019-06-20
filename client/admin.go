@@ -1,4 +1,4 @@
-package cluster
+package client
 
 import (
 	"context"
@@ -6,6 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
 )
+
+func AdminClient(client *rpc.Client) Admin {
+	return Admin{client}
+}
 
 type Admin struct {
 	client *rpc.Client
