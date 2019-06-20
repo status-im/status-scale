@@ -35,6 +35,7 @@ type ScaleOpts struct {
 	Relay           int
 	Users           int
 	Rendezvous      int
+	Mails           int
 	Deploy          bool
 	Enodes          []string
 	RendezvousNodes []string
@@ -43,6 +44,7 @@ type ScaleOpts struct {
 const (
 	Boot           PeerType = "boot"
 	Relay          PeerType = "relay"
+	Mail           PeerType = "mail"
 	User           PeerType = "user"
 	RendezvousBoot PeerType = "rendezvous"
 )
@@ -101,7 +103,7 @@ func (c *Cluster) totalOfType(typ PeerType) int {
 func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	log.Debug(
 		"Adding nodes to cluster.", "name", c.Prefix, "cidr", c.IPAM,
-		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users,
+		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users, "mailservers count", opts.Mails,
 		"rendezvous count", opts.Rendezvous, "enodes", opts.Enodes, "rendezvous", opts.RendezvousNodes,
 	)
 	netID, err := c.Backend.EnsureNetwork(ctx, dockershim.NetOpts{
@@ -116,7 +118,12 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	var (
 		enodes          []string
 		rendezvousNodes []string
+		mailservers     []string
 	)
+	for _, p := range c.running[Mail] {
+		mailservers = append(mailservers, p.(*Peer).Enode())
+	}
+
 	if opts.Enodes != nil {
 		enodes = opts.Enodes
 	}
@@ -126,6 +133,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	boot := c.totalOfType(Boot)
 	relay := c.totalOfType(Relay)
 	users := c.totalOfType(User)
+	mails := c.totalOfType(Mail)
 	rendezvous := c.totalOfType(RendezvousBoot)
 	for i := boot; i < boot+opts.Boot; i++ {
 		b := NewBootnode(BootnodeConfig{
@@ -162,6 +170,23 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		}
 	}
 
+	for i := mails; i < mails+opts.Mails; i++ {
+		cfg := DefaultConfig()
+		cfg.Name = c.getName(string(Mail), strconv.Itoa(i))
+		cfg.NetID = netID
+		cfg.IP = c.IPAM.Take().String()
+		cfg.BootNodes = enodes
+		cfg.RendezvousNodes = rendezvousNodes
+		cfg.Image = c.Statusd
+		cfg.Mailserver = true
+		cfg.TopicSearch = map[string]string{
+			"whisper": "5,7",
+		}
+		cfg.TopicRegister = []string{"whisper", "mail"}
+		p := NewStatusd(cfg, c.Backend)
+		c.pending[Mail] = append(c.pending[Mail], p)
+	}
+
 	for i := relay; i < relay+opts.Relay; i++ {
 		cfg := DefaultConfig()
 		cfg.Name = c.getName(string(Relay), strconv.Itoa(i))
@@ -186,6 +211,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.IP = c.IPAM.Take().String()
 		cfg.BootNodes = enodes
 		cfg.RendezvousNodes = rendezvousNodes
+		cfg.Mailservers = mailservers
 		cfg.TopicSearch = map[string]string{
 			"whisper": "2,2",
 		}
@@ -204,7 +230,11 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 }
 
 func (c *Cluster) DeployPending(ctx context.Context) error {
-	run := utils.NewGroup(ctx, len(c.pending[Boot])+len(c.pending[Relay])+len(c.pending[User])+len(c.pending[RendezvousBoot]))
+	total := 0
+	for _, peers := range c.pending {
+		total += len(peers)
+	}
+	run := utils.NewGroup(ctx, total)
 	for typ, peers := range c.pending {
 		log.Info("pending", "type", typ, "len", len(peers))
 		for i := range peers {
@@ -302,6 +332,7 @@ func (c *Cluster) Clean(ctx context.Context) {
 	if c.Keep {
 		return
 	}
+	log.Info("cleaning environment", "prefix", c.Prefix)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, peers := range c.running {
