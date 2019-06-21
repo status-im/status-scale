@@ -57,6 +57,13 @@ func NewClient(config PeerConfig, backend Backend, identity *ecdsa.PrivateKey) *
 	}
 }
 
+func NewMVDS(config PeerConfig, backend Backend, identity *ecdsa.PrivateKey) *Client {
+	return &Client{Peer: NewPeer(config, backend,
+		[]string{"status-term-client", "-mvds", "-no-ui", "-node-config", containerConfig, "-keyhex", hex.EncodeToString(crypto.FromECDSA(identity))}),
+		Identity: identity,
+	}
+}
+
 type Client struct {
 	*Peer
 	Identity *ecdsa.PrivateKey
@@ -299,4 +306,12 @@ func (p *Peer) Reboot(ctx context.Context) (err error) {
 		return err
 	}
 	return p.healthcheck(ctx, 20, time.Second)
+}
+
+func (p *Peer) Stop(ctx context.Context) error {
+	return nil
+}
+
+func (p *Peer) Start(ctx context.Context) error {
+	return nil
 }
