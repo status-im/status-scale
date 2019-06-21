@@ -47,9 +47,11 @@ func TestClientsExample(t *testing.T) {
 	require.NoError(t, c.EnableConditionsGloobally(context.TODO(), network.Options{TargetAddr: c.IPAM.String(), Latency: 25}))
 	rtt := &RTTMeter{
 		chat:     chat,
-		sender:   user0,
-		receiver: user1,
+		sender:   c.GetUser(0),
+		receiver: c.GetUser(1),
 	}
+	// TODO(dshulyak) figure out how to measure distance between two peers.
+	// one way is to get peers from one of the user and do breadth-first search
 	log.Info("started metering latency")
 	require.NoError(t, rtt.MeterSequantially(100))
 	log.Info("metered rtt", "messages", 100,
@@ -60,7 +62,7 @@ func TestClientsExample(t *testing.T) {
 type RTTMeter struct {
 	chat gethservice.Contact
 
-	sender, receiver client.Chat
+	sender, receiver *cluster.Client
 	samples          []float64
 }
 
@@ -82,29 +84,44 @@ func (m RTTMeter) Percentile(percent float64) float64 {
 	return rst
 }
 
-func (m *RTTMeter) meter(i int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (m *RTTMeter) send(i int) (time.Time, error) {
+	tick := time.Tick(20 * time.Millisecond)
+	after := time.After(10 * time.Minute)
 	payload := fmt.Sprintf("hello receiver: %d", i)
-	sent := time.Now()
-	err := m.sender.Send(ctx, m.chat, payload)
-	defer cancel()
-	if err != nil {
-		return err
-	}
-	tick := time.Tick(50 * time.Millisecond)
-	after := time.After(10 * time.Second)
+	// TODO(dshulyak) add util PollImmediatly(func(context.Context) error, period, timeout time.Duration)
 	for {
 		select {
 		case <-tick:
-			ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-			msgs, err := m.receiver.Messages(ctx, m.chat, int64(i))
-			defer cancel()
+			sent := time.Now()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := client.ChatClient(m.sender.Rpc()).Send(ctx, m.chat, payload)
+			cancel()
+			if err != nil {
+				log.Debug("can't send msg", "payload", payload, "error", err)
+				continue
+			}
+			return sent, nil
+		case <-after:
+			return time.Time{}, fmt.Errorf("failed to send a message %s", payload)
+		}
+	}
+}
+
+func (m *RTTMeter) receive(i int) error {
+	tick := time.Tick(20 * time.Millisecond)
+	after := time.After(10 * time.Minute)
+	payload := fmt.Sprintf("hello receiver: %d", i)
+	for {
+		select {
+		case <-tick:
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			msgs, err := client.ChatClient(m.sender.Rpc()).Messages(ctx, m.chat, int64(i))
+			cancel()
 			if err != nil {
 				return err
 			}
 			for _, msg := range msgs {
 				if msg.Text == payload {
-					m.samples = append(m.samples, time.Since(sent).Seconds())
 					return nil
 				}
 			}
@@ -112,4 +129,18 @@ func (m *RTTMeter) meter(i int) error {
 			return fmt.Errorf("failed waiting for a message with payload %s", payload)
 		}
 	}
+}
+
+func (m *RTTMeter) meter(i int) error {
+	sent, err := m.send(i)
+	if err != nil {
+		return err
+	}
+	err = m.receive(i)
+	if err != nil {
+		return err
+	}
+	log.Debug("latency for msg", "i", i, "duration", time.Since(sent))
+	m.samples = append(m.samples, time.Since(sent).Seconds())
+	return nil
 }

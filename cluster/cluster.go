@@ -40,6 +40,7 @@ type ScaleOpts struct {
 	Boot            int
 	Relay           int
 	Users           int
+	MVDS            int
 	Rendezvous      int
 	Mails           int
 	Deploy          bool
@@ -52,6 +53,7 @@ const (
 	Relay          PeerType = "relay"
 	Mail           PeerType = "mail"
 	User           PeerType = "user"
+	MVDS           PeerType = "mvds"
 	RendezvousBoot PeerType = "rendezvous"
 )
 
@@ -109,7 +111,7 @@ func (c *Cluster) totalOfType(typ PeerType) int {
 func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	log.Debug(
 		"Adding nodes to cluster.", "name", c.Prefix, "cidr", c.IPAM,
-		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users, "mailservers count", opts.Mails,
+		"boot count", opts.Boot, "relay count", opts.Relay, "users count", opts.Users, "mvds count", opts.MVDS, "mailservers count", opts.Mails,
 		"rendezvous count", opts.Rendezvous, "enodes", opts.Enodes, "rendezvous", opts.RendezvousNodes,
 	)
 	netID, err := c.Backend.EnsureNetwork(ctx, dockershim.NetOpts{
@@ -136,10 +138,13 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 	if opts.RendezvousNodes != nil {
 		rendezvousNodes = opts.RendezvousNodes
 	}
+	// FIXME(dshulyak) there is definitely reusable pattern.
+	// note that bootnodes and mail servers have to be created before and passed to relays/users
 	boot := c.totalOfType(Boot)
 	relay := c.totalOfType(Relay)
 	users := c.totalOfType(User)
 	mails := c.totalOfType(Mail)
+	mvds := c.totalOfType(MVDS)
 	rendezvous := c.totalOfType(RendezvousBoot)
 	for i := boot; i < boot+opts.Boot; i++ {
 		b := NewBootnode(BootnodeConfig{
@@ -229,6 +234,26 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		log.Trace("adding user peer to pending", "name", cfg.Name, "ip", cfg.IP)
 		c.pending[User] = append(c.pending[User], p)
 	}
+	for i := mvds; i < mvds+opts.MVDS; i++ {
+		cfg := DefaultConfig()
+		cfg.Name = c.getName(string(MVDS), strconv.Itoa(i))
+		cfg.NetID = netID
+		cfg.Image = c.Client
+		cfg.IP = c.IPAM.Take().String()
+		cfg.BootNodes = enodes
+		cfg.RendezvousNodes = rendezvousNodes
+		cfg.Mailservers = mailservers
+		cfg.TopicSearch = map[string]string{
+			"whisper": "2,2",
+		}
+		identity, err := crypto.GenerateKey()
+		if err != nil {
+			return err
+		}
+		p := NewClient(cfg, c.Backend, identity)
+		log.Trace("adding mvds peer to pending", "name", cfg.Name, "ip", cfg.IP)
+		c.pending[MVDS] = append(c.pending[MVDS], p)
+	}
 	if opts.Deploy {
 		return c.DeployPending(ctx)
 	}
@@ -278,6 +303,15 @@ func (c *Cluster) GetUsers() []*Client {
 		rst[i] = c.running[User][i].(*Client)
 	}
 	return rst
+}
+
+func (c *Cluster) GetMVDS(n int) *Client {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[MVDS])-1 {
+		return nil
+	}
+	return c.running[MVDS][n].(*Client)
 }
 
 func (c *Cluster) GetPendingRelay(n int) *Peer {
