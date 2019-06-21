@@ -12,6 +12,7 @@ import (
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/mount"
 	"docker.io/go-docker/api/types/network"
+	"docker.io/go-docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -116,6 +117,7 @@ func (p DockerShim) Create(ctx context.Context, id string, opts CreateOpts) erro
 	}, &container.HostConfig{
 		PortBindings: portsMap,
 		Mounts:       mounts,
+		CapAdd:       strslice.StrSlice{"NET_ADMIN"},
 	}, &network.NetworkingConfig{
 		EndpointsConfig: endpoints,
 	}, id)

@@ -120,7 +120,7 @@ func (p *Peer) Create(ctx context.Context) error {
 	}
 	cfg.LogEnabled = true
 	cfg.LogToStderr = true
-	cfg.LogLevel = "DEBUG"
+	cfg.LogLevel = "INFO"
 	var exposed []string
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true

@@ -13,8 +13,9 @@ require (
 	github.com/karalabe/hid v1.0.0 // indirect
 	github.com/libp2p/go-libp2p-crypto v0.1.0
 	github.com/libp2p/go-libp2p-peer v0.2.0
+	github.com/montanaflynn/stats v0.5.0
 	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84
-	github.com/status-im/status-console-client v0.0.0-20190619081802-0f408b05f344
+	github.com/status-im/status-console-client v0.0.0-20190620163944-d7abdc91a42e
 	github.com/status-im/status-go v0.26.0-beta.0
 	github.com/stretchr/testify v1.3.0
 )

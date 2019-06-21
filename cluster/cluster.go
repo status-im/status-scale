@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/status-im/status-scale/dockershim"
+	"github.com/status-im/status-scale/network"
 	"github.com/status-im/status-scale/utils"
 )
 
@@ -26,6 +27,11 @@ type Removable interface {
 
 type Rebootable interface {
 	Reboot(context.Context) error
+}
+
+type Enforsable interface {
+	EnableConditions(ctx context.Context, opts ...network.Options) error
+	DisableConditions(ctx context.Context, opts ...network.Options) error
 }
 
 type PeerType string
@@ -346,4 +352,23 @@ func (c *Cluster) Clean(ctx context.Context) {
 	if err := c.Backend.RemoveNetwork(ctx, c.netID); err != nil {
 		log.Error("error removing", "network", c.getName("net"), "error", err)
 	}
+}
+
+func (c *Cluster) EnableConditionsGloobally(ctx context.Context, opts ...network.Options) error {
+	total := 0
+	// FIXME(dshulyak) set interface for a peer. i am using set of methods in the cluster
+	// that every peer should provide for correctness.
+	for _, peers := range c.running {
+		total += len(peers)
+	}
+	group := utils.NewGroup(ctx, total)
+	for _, peers := range c.running {
+		for _, p := range peers {
+			typed := p.(Enforsable)
+			group.Run(func(ctx context.Context) error {
+				return typed.EnableConditions(ctx, opts...)
+			})
+		}
+	}
+	return group.Error()
 }
