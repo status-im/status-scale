@@ -6,7 +6,6 @@ images:
 .PHONY: images
 
 install-dev:
-	# a tool to vendor non-go files
 	GO111MODULE=off go get -u github.com/goware/modvendor
 .PHONY: install-dev
 
