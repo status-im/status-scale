@@ -52,7 +52,7 @@ func NewStatusd(config PeerConfig, backend Backend) *Peer {
 
 func NewClient(config PeerConfig, backend Backend, identity *ecdsa.PrivateKey) *Client {
 	return &Client{Peer: NewPeer(config, backend,
-		[]string{"status-term-client", "-no-ui", "-node-config", containerConfig, "-keyhex", hex.EncodeToString(crypto.FromECDSA(identity))}),
+		[]string{"status-term-client", "-no-ui", "-node-config", containerConfig, "-keyhex", hex.EncodeToString(crypto.FromECDSA(identity)), "-log-level", "TRACE"}),
 		Identity: identity,
 	}
 }
@@ -127,7 +127,7 @@ func (p *Peer) Create(ctx context.Context) error {
 	}
 	cfg.LogEnabled = true
 	cfg.LogToStderr = true
-	cfg.LogLevel = "INFO"
+	cfg.LogLevel = "TRACE"
 	var exposed []string
 	if p.config.Whisper {
 		cfg.WhisperConfig.Enabled = true

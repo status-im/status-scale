@@ -28,7 +28,7 @@ type RTTMeter struct {
 
 func (m *RTTMeter) MeterSequantially(count int) error {
 	for i := 0; i < count; i++ {
-		err := m.meter(i)
+		err := m.meter(context.Background(), i)
 		if err != nil {
 			return err
 		}
@@ -38,8 +38,10 @@ func (m *RTTMeter) MeterSequantially(count int) error {
 
 func (m *RTTMeter) MeterFor(duration time.Duration) error {
 	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	defer cancel()
 	for i := 0; time.Since(start) < duration; i++ {
-		err := m.meter(i)
+		err := m.meter(ctx, i)
 		if err != nil {
 			return err
 		}
@@ -55,7 +57,11 @@ func (m RTTMeter) Percentile(percent float64) float64 {
 	return rst
 }
 
-func (m *RTTMeter) send(i int) (time.Time, error) {
+func (m *RTTMeter) Messages() int {
+	return len(m.samples)
+}
+
+func (m *RTTMeter) send(parent context.Context, i int) (time.Time, error) {
 	tick := time.Tick(20 * time.Millisecond)
 	after := time.After(10 * time.Minute)
 	payload := fmt.Sprintf("hello receiver: %d", i)
@@ -64,7 +70,7 @@ func (m *RTTMeter) send(i int) (time.Time, error) {
 		select {
 		case <-tick:
 			sent := time.Now()
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 			err := ChatClient(m.sender.Rpc()).Send(ctx, m.chat, payload)
 			cancel()
 			if err != nil {
@@ -74,18 +80,20 @@ func (m *RTTMeter) send(i int) (time.Time, error) {
 			return sent, nil
 		case <-after:
 			return time.Time{}, fmt.Errorf("failed to send a message %s", payload)
+		case <-parent.Done():
+			return time.Time{}, nil
 		}
 	}
 }
 
-func (m *RTTMeter) receive(i int) error {
+func (m *RTTMeter) receive(parent context.Context, i int) error {
 	tick := time.Tick(20 * time.Millisecond)
 	after := time.After(10 * time.Minute)
 	payload := fmt.Sprintf("hello receiver: %d", i)
 	for {
 		select {
 		case <-tick:
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 			msgs, err := ChatClient(m.receiver.Rpc()).Messages(ctx, m.chat, int64(i))
 			cancel()
 			if err != nil {
@@ -98,16 +106,18 @@ func (m *RTTMeter) receive(i int) error {
 			}
 		case <-after:
 			return fmt.Errorf("failed waiting for a message with payload %s", payload)
+		case <-parent.Done():
+			return nil
 		}
 	}
 }
 
-func (m *RTTMeter) meter(i int) error {
-	sent, err := m.send(i)
+func (m *RTTMeter) meter(ctx context.Context, i int) error {
+	sent, err := m.send(ctx, i)
 	if err != nil {
 		return err
 	}
-	err = m.receive(i)
+	err = m.receive(ctx, i)
 	if err != nil {
 		return err
 	}
