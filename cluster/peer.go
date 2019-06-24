@@ -207,7 +207,7 @@ func (p *Peer) Create(ctx context.Context) error {
 	return p.healthcheck(ctx, 20, time.Second)
 }
 
-func (p Peer) Remove(ctx context.Context) error {
+func (p *Peer) Remove(ctx context.Context) error {
 	log.Debug("removing statusd", "name", p.name)
 	if len(p.hostConfig) > 0 {
 		if err := os.Remove(p.hostConfig); err != nil {
@@ -217,22 +217,26 @@ func (p Peer) Remove(ctx context.Context) error {
 	return p.backend.Remove(ctx, p.name)
 }
 
-func (p Peer) EnableConditions(ctx context.Context, opts ...network.Options) error {
+func (p *Peer) EnableConditions(ctx context.Context, opt network.Options) error {
 	return network.ComcastStart(func(ctx context.Context, cmd []string) error {
 		log.Debug("run command", "peer", p.name, "command", strings.Join(cmd, " "))
 		return p.backend.Execute(ctx, p.name, cmd)
-	}, ctx, opts...)
+	}, ctx, opt)
 }
 
-func (p Peer) IP() string {
-	return p.config.IP
-}
-
-func (p Peer) DisableConditions(ctx context.Context, opts ...network.Options) error {
-	return network.ComcastStop(func(ctx context.Context, cmd []string) error {
+func (p *Peer) DisableConditions(ctx context.Context, opt network.Options) error {
+	err := network.ComcastStop(func(ctx context.Context, cmd []string) error {
 		log.Debug("run command", "peer", p.name, "command", strings.Join(cmd, " "))
 		return p.backend.Execute(ctx, p.name, cmd)
-	}, ctx, opts...)
+	}, ctx, opt)
+	if err != nil {
+		return fmt.Errorf("failed to stop comcast on a peer %s: %v", p.name, err)
+	}
+	return nil
+}
+
+func (p *Peer) IP() string {
+	return p.config.IP
 }
 
 func (p Peer) makeRPCClient(ctx context.Context) (*rpc.Client, error) {
@@ -306,12 +310,4 @@ func (p *Peer) Reboot(ctx context.Context) (err error) {
 		return err
 	}
 	return p.healthcheck(ctx, 20, time.Second)
-}
-
-func (p *Peer) Stop(ctx context.Context) error {
-	return nil
-}
-
-func (p *Peer) Start(ctx context.Context) error {
-	return nil
 }

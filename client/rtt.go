@@ -36,6 +36,17 @@ func (m *RTTMeter) MeterSequantially(count int) error {
 	return nil
 }
 
+func (m *RTTMeter) MeterFor(duration time.Duration) error {
+	start := time.Now()
+	for i := 0; time.Since(start) < duration; i++ {
+		err := m.meter(i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m RTTMeter) Percentile(percent float64) float64 {
 	rst, err := stats.Percentile(m.samples, percent)
 	if err != nil {
@@ -57,7 +68,7 @@ func (m *RTTMeter) send(i int) (time.Time, error) {
 			err := ChatClient(m.sender.Rpc()).Send(ctx, m.chat, payload)
 			cancel()
 			if err != nil {
-				log.Debug("can't send msg", "payload", payload, "error", err)
+				log.Trace("can't send msg", "payload", payload, "error", err)
 				continue
 			}
 			return sent, nil
@@ -75,10 +86,10 @@ func (m *RTTMeter) receive(i int) error {
 		select {
 		case <-tick:
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			msgs, err := ChatClient(m.sender.Rpc()).Messages(ctx, m.chat, int64(i))
+			msgs, err := ChatClient(m.receiver.Rpc()).Messages(ctx, m.chat, int64(i))
 			cancel()
 			if err != nil {
-				return err
+				continue
 			}
 			for _, msg := range msgs {
 				if msg.Text == payload {

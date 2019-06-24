@@ -27,3 +27,7 @@ func (c Chat) Send(ctx context.Context, contact gethservice.Contact, msg string)
 func (c Chat) Messages(ctx context.Context, contact gethservice.Contact, offset int64) (rst []*protocol.Message, err error) {
 	return rst, c.client.CallContext(ctx, &rst, "ssm_readContactMessages", contact, offset)
 }
+
+func (c Chat) RequestAll(ctx context.Context) error {
+	return c.client.CallContext(ctx, nil, "ssm_requestAll", true)
+}

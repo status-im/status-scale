@@ -7,6 +7,7 @@ import (
 	"github.com/status-im/status-scale/dockershim"
 )
 
+// TODO(dshulyak) options must be defined in this module
 type Backend interface {
 	Execute(context.Context, string, []string) error
 	Create(context.Context, string, dockershim.CreateOpts) error

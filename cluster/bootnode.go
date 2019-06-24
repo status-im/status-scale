@@ -56,6 +56,10 @@ type Bootnode struct {
 	key     *ecdsa.PrivateKey
 }
 
+func (b Bootnode) IP() string {
+	return b.ip
+}
+
 func (b Bootnode) String() string {
 	return fmt.Sprintf("bootnode %s %s", b.name, b.ip)
 }
@@ -90,16 +94,16 @@ func (b Bootnode) Remove(ctx context.Context) error {
 	return b.backend.Remove(ctx, b.name)
 }
 
-func (b Bootnode) EnableConditions(ctx context.Context, opts ...network.Options) error {
+func (b Bootnode) EnableConditions(ctx context.Context, opt network.Options) error {
 	return network.ComcastStart(func(ctx context.Context, cmd []string) error {
 		return b.backend.Execute(ctx, b.name, cmd)
-	}, ctx, opts...)
+	}, ctx, opt)
 }
 
-func (b Bootnode) DisableConditions(ctx context.Context, opts ...network.Options) error {
+func (b Bootnode) DisableConditions(ctx context.Context, opt network.Options) error {
 	return network.ComcastStop(func(ctx context.Context, cmd []string) error {
 		return b.backend.Execute(ctx, b.name, cmd)
-	}, ctx, opts...)
+	}, ctx, opt)
 }
 
 func (b Bootnode) Reboot(ctx context.Context) error {
