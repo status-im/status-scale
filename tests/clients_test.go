@@ -30,10 +30,10 @@ func TestClientsExample(t *testing.T) {
 	require.NoError(t, err)
 	// Add two console client to cluster. Note that mailserver has to be deployed before adding clients
 	// as the current client code depends on available mailservers.
-	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{Users: 2, Deploy: true}))
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{MVDS: 2, Deploy: true}))
 
-	user0 := client.ChatClient(c.GetUser(0).Rpc())
-	user1 := client.ChatClient(c.GetUser(1).Rpc())
+	user0 := client.ChatClient(c.GetMVDS(0).Rpc())
+	user1 := client.ChatClient(c.GetMVDS(1).Rpc())
 
 	name := make([]byte, 10)
 	n, err := rand.Read(name)
@@ -49,7 +49,7 @@ func TestClientsExample(t *testing.T) {
 	// FIXME(dshulyak) if addr is not provided comcast will use both iptables and ip6tables to insert mangle rules
 	// ip6tables fails in the container on my enviornment due to lack of kernel module
 	//require.NoError(t, c.EnableConditionsGloobally(context.TODO(), network.Options{TargetAddr: c.IPAM.String(), Latency: 50}))
-	churn := NewChurnSim(c.GetUsers(), ChurnParams{
+	churn := NewChurnSim(c.GetMVDSClients(), ChurnParams{
 		TargetAddrs: []string{c.IPAM.String()},
 		Period:      10 * time.Second,
 		ChurnRate:   0.1,
@@ -59,17 +59,18 @@ func TestClientsExample(t *testing.T) {
 			return churn.Control(ctx)
 		}, 200*time.Millisecond, 20*time.Minute))
 	}()
-	rtt := client.NewRTTMeter(chat, c.GetUser(0), c.GetUser(1))
+	rtt := client.NewRTTMeter(chat, c.GetMVDS(0), c.GetMVDS(1))
 	// TODO(dshulyak) figure out how to measure distance between two peers.
 	// one way is to get peers from one of the user and do breadth-first search
 	log.Debug("started metering latency")
-	require.NoError(t, rtt.MeterFor(2*time.Minute))
-	log.Info("metered rtt", "messages", 100,
+	rtt.MeterFor(10 * time.Minute)
+	log.Info("metered rtt", "messages", rtt.Messages(),
+		"latency for 75 percentile", rtt.Percentile(75),
 		"latency for 90 percentile", rtt.Percentile(90),
 		"latency for 95 percentile", rtt.Percentile(95),
 		"latency for 99.9 percentile", rtt.Percentile(99.9))
 	table := metrics.NewCompleteTab("container name", metrics.P2PColumns())
-	require.NoError(t, client.CollectMetrics(context.Background(), table, c.GetUsers(), nil))
+	require.NoError(t, client.CollectMetrics(context.Background(), table, c.GetMVDSClients(), nil))
 	metrics.ToASCII(table, os.Stdout).Render()
 }
 
@@ -85,7 +86,7 @@ func NewChurnSim(participants []*cluster.Client, params ChurnParams) *ChurnSim {
 		jitter:       jitter,
 		participants: participants,
 		offline:      make([]bool, lth),
-		offlineSince: make([]time.Time, lth),
+		offlineUntil: make([]time.Time, lth),
 		liveSince:    liveSince,
 	}
 }
@@ -106,7 +107,7 @@ type ChurnSim struct {
 	jitter       time.Duration // jitter is a half of the total
 	participants []*cluster.Client
 	liveSince    []time.Time
-	offlineSince []time.Time
+	offlineUntil []time.Time
 	offline      []bool
 }
 
@@ -146,7 +147,7 @@ func (c *ChurnSim) start(ctx context.Context, p *cluster.Client) error {
 			return fmt.Errorf("requesting messages failed: %v", err)
 		}
 		return nil
-	}, 100*time.Millisecond, 20*time.Second)
+	}, 2*time.Second, 30*time.Second)
 }
 
 // FIXME (dshulyak) rewrite in a concurrently friendly way
@@ -159,14 +160,16 @@ func (c *ChurnSim) control(ctx context.Context, i int) error {
 			return err
 		}
 		log.Debug("peer is stopped", "peer", c.participants[i].UID())
-		c.offlineSince[i] = time.Now()
+		offline := c.jitter
+		jitter := time.Duration(rand.Int63n(int64(c.jitter.Seconds()))*2) * time.Second
+		offline += jitter
+		log.Debug("peer will be offline", "peer", c.participants[i].UID(), "duration", offline)
+		c.offlineUntil[i] = time.Now().Add(offline)
 		c.offline[i] = true
 		return nil
 	}
-	offline := c.jitter
-	offline += time.Duration(rand.Int63n(int64(c.jitter.Seconds()))*2) * time.Second
-	if c.offline[i] && time.Since(c.offlineSince[i]) > offline {
-		log.Debug("peer will be started", "peer", c.participants[i].UID(), "offline time more than", offline)
+	if c.offline[i] && time.Now().Sub(c.offlineUntil[i]) > 0 {
+		log.Debug("peer will be started", "peer", c.participants[i].UID())
 		err := c.start(ctx, c.participants[i])
 		if err != nil {
 			log.Error("starting peer failed", "peer", c.participants[i].UID(), "error", err)

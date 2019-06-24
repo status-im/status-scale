@@ -308,6 +308,14 @@ func (c *Cluster) GetUsers() []*Client {
 	return rst
 }
 
+func (c *Cluster) GetMVDSClients() []*Client {
+	rst := make([]*Client, len(c.running[MVDS]))
+	for i := range c.running[MVDS] {
+		rst[i] = c.running[MVDS][i].(*Client)
+	}
+	return rst
+}
+
 func (c *Cluster) GetMVDS(n int) *Client {
 	c.mu.Lock()
 	defer c.mu.Unlock()
