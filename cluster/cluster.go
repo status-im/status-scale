@@ -15,8 +15,7 @@ import (
 	"github.com/status-im/status-scale/utils"
 )
 
-// Fixme standardize access to bootnodes and peers
-
+// FIXME(dshulyak) implement single Peer interface
 type Creatable interface {
 	Create(context.Context) error
 }
@@ -32,6 +31,10 @@ type Rebootable interface {
 type Enforsable interface {
 	EnableConditions(ctx context.Context, opts ...network.Options) error
 	DisableConditions(ctx context.Context, opts ...network.Options) error
+}
+
+type AssignedIP interface {
+	IP() string
 }
 
 type PeerType string
@@ -388,7 +391,7 @@ func (c *Cluster) Clean(ctx context.Context) {
 	}
 }
 
-func (c *Cluster) EnableConditionsGloobally(ctx context.Context, opts ...network.Options) error {
+func (c *Cluster) EnableConditionsGloobally(ctx context.Context, opt network.Options) error {
 	total := 0
 	// FIXME(dshulyak) set interface for a peer. i am using set of methods in the cluster
 	// that every peer should provide for correctness.
@@ -400,9 +403,21 @@ func (c *Cluster) EnableConditionsGloobally(ctx context.Context, opts ...network
 		for _, p := range peers {
 			typed := p.(Enforsable)
 			group.Run(func(ctx context.Context) error {
-				return typed.EnableConditions(ctx, opts...)
+				return typed.EnableConditions(ctx, opt)
 			})
 		}
 	}
 	return group.Error()
+}
+
+func (c *Cluster) AllIPs() (rst []string) {
+	for _, group := range c.running {
+		for _, p := range group {
+			a, ok := p.(AssignedIP)
+			if ok {
+				rst = append(rst, a.IP())
+			}
+		}
+	}
+	return rst
 }

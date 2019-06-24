@@ -4,25 +4,17 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 )
 
 var (
-	ErrorNothingToRun = errors.New("nothing to run")
-	ErrorNoConditions = errors.New("no condtitions")
+	ErrNothingToRun = errors.New("nothing to run")
 )
 
 type executor func(context.Context, []string) error
 
-func ComcastStart(shell executor, ctx context.Context, options ...Options) error {
-	if len(options) == 0 {
-		return ErrorNothingToRun
-	}
-	for _, opt := range options {
-		if err := ComcastStartSingle(shell, ctx, opt); err != nil {
-			return err
-		}
-	}
-	return nil
+func ComcastStart(shell executor, ctx context.Context, opt Options) error {
+	return ComcastStartSingle(shell, ctx, opt)
 }
 
 func ComcastStartSingle(shell executor, ctx context.Context, opt Options) error {
@@ -33,11 +25,11 @@ func ComcastStartSingle(shell executor, ctx context.Context, opt Options) error 
 	if opt.PacketLoss != 0 {
 		cmd = append(cmd, "-packet-loss", strconv.Itoa(opt.PacketLoss))
 	}
-	if len(opt.TargetAddr) != 0 {
-		cmd = append(cmd, "-target-addr", opt.TargetAddr)
+	if len(opt.TargetAddrs) != 0 {
+		cmd = append(cmd, "-target-addr", strings.Join(opt.TargetAddrs, ","))
 	}
 	if len(cmd) == 1 {
-		return ErrorNoConditions
+		return ErrNothingToRun
 	}
 	return shell(ctx, cmd)
 }
@@ -47,8 +39,8 @@ func ComcastStop(shell executor, ctx context.Context, options ...Options) error 
 }
 
 type Options struct {
-	TargetInterface string // comcast selects eth0 by default
-	TargetAddr      string // all addresses will be blocked by default
-	Latency         int    // milliseconds
-	PacketLoss      int    // percents
+	TargetInterface string   // comcast selects eth0 by default
+	TargetAddrs     []string // all addresses will be blocked by default
+	Latency         int      // milliseconds
+	PacketLoss      int      // percents
 }
