@@ -343,6 +343,15 @@ func (c *Cluster) GetRelay(n int) *Peer {
 	return c.running[Relay][n].(*Peer)
 }
 
+func (c *Cluster) GetMail(n int) *Peer {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if n > len(c.running[Mail])-1 {
+		return nil
+	}
+	return c.running[Mail][n].(*Peer)
+}
+
 func (c *Cluster) GetPendingUser(n int) *Client {
 	c.mu.Lock()
 	defer c.mu.Unlock()

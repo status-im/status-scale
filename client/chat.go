@@ -8,6 +8,13 @@ import (
 	"github.com/status-im/status-console-client/protocol/v1"
 )
 
+type RequestParams struct {
+	gethservice.Contact
+	Limit int   `json:"limit"`
+	From  int64 `json:"from"`
+	To    int64 `json:"to"`
+}
+
 func ChatClient(client *rpc.Client) Chat {
 	return Chat{client}
 }
@@ -30,4 +37,8 @@ func (c Chat) Messages(ctx context.Context, contact gethservice.Contact, offset 
 
 func (c Chat) RequestAll(ctx context.Context) error {
 	return c.client.CallContext(ctx, nil, "ssm_requestAll", true)
+}
+
+func (c Chat) Request(ctx context.Context, params RequestParams) error {
+	return c.client.CallContext(ctx, nil, "ssm_request", params)
 }
