@@ -264,6 +264,8 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 }
 
 func (c *Cluster) DeployPending(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	total := 0
 	for _, peers := range c.pending {
 		total += len(peers)
@@ -272,13 +274,9 @@ func (c *Cluster) DeployPending(ctx context.Context) error {
 	for typ, peers := range c.pending {
 		log.Info("pending", "type", typ, "len", len(peers))
 		for i := range peers {
-			typ := typ
 			p := peers[i]
 			run.Run(func(ctx context.Context) error {
 				err := p.(Creatable).Create(ctx)
-				c.mu.Lock()
-				c.running[typ] = append(c.running[typ], p)
-				c.mu.Unlock()
 				if err != nil {
 					return fmt.Errorf("error creating %v: %v", p, err)
 				}
@@ -286,10 +284,16 @@ func (c *Cluster) DeployPending(ctx context.Context) error {
 			})
 		}
 	}
-	c.pending = map[PeerType][]interface{}{}
 	err := run.Error()
 	log.Debug("finished cluster deployment", "error", err)
-	return err
+	if err != nil {
+		return err
+	}
+	for typ := range c.pending {
+		c.running[typ] = append(c.running[typ], c.pending[typ]...)
+	}
+	c.pending = map[PeerType][]interface{}{}
+	return nil
 }
 
 func (c *Cluster) GetRelays() []*Peer {
