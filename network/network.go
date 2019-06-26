@@ -28,6 +28,9 @@ func ComcastStartSingle(shell executor, ctx context.Context, opt Options) error 
 	if len(opt.TargetAddrs) != 0 {
 		cmd = append(cmd, "-target-addr", strings.Join(opt.TargetAddrs, ","))
 	}
+	if opt.BW != 0 {
+		cmd = append(cmd, "-target-bw", strconv.Itoa(opt.BW))
+	}
 	if len(cmd) == 1 {
 		return ErrNothingToRun
 	}
@@ -43,4 +46,5 @@ type Options struct {
 	TargetAddrs     []string // all addresses will be blocked by default
 	Latency         int      // milliseconds
 	PacketLoss      int      // percents
+	BW              int      //target bandwidth in kb
 }
