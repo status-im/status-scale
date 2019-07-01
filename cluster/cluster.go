@@ -194,9 +194,9 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		cfg.Image = c.Statusd
 		cfg.Mailserver = true
 		cfg.TopicSearch = map[string]string{
-			"whisper": "5,7",
+			"whisper": "3,5",
 		}
-		cfg.TopicRegister = []string{"whisper", "mail"}
+		cfg.TopicRegister = []string{"mail"}
 		p := NewStatusd(cfg, c.Backend)
 		c.pending[Mail] = append(c.pending[Mail], p)
 	}

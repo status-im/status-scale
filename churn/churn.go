@@ -78,6 +78,7 @@ func (c *ChurnSim) start(ctx context.Context, p *cluster.Client) error {
 	if err != nil {
 		return fmt.Errorf("failed to disable packet loss: %v", err)
 	}
+	log.Debug("trying to fetch messages from mail server", "peer", p.UID())
 	return utils.PollImmediateNoError(ctx, func(parent context.Context) error {
 		ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 		defer cancel()
@@ -85,6 +86,7 @@ func (c *ChurnSim) start(ctx context.Context, p *cluster.Client) error {
 		if err != nil {
 			return fmt.Errorf("requesting messages failed: %v", err)
 		}
+		log.Debug("fetched messages from mail server", "peer", p.UID())
 		return nil
 	}, 2*time.Second, 30*time.Second)
 }
