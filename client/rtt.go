@@ -81,7 +81,7 @@ func (m *RTTMeter) send(parent context.Context, i int) (time.Time, error) {
 		case <-after:
 			return time.Time{}, fmt.Errorf("failed to send a message %s", payload)
 		case <-parent.Done():
-			return time.Time{}, nil
+			return time.Time{}, parent.Err()
 		}
 	}
 }
@@ -107,7 +107,7 @@ func (m *RTTMeter) receive(parent context.Context, i int) error {
 		case <-after:
 			return fmt.Errorf("failed waiting for a message with payload %s", payload)
 		case <-parent.Done():
-			return nil
+			return parent.Err()
 		}
 	}
 }

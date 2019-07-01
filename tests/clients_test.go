@@ -22,7 +22,7 @@ func TestClientsExample(t *testing.T) {
 	c := ClusterFromConfig()
 
 	// Setup cluster from 20 relays, mailserver and bootnode to connect them.
-	err := c.Create(context.TODO(), cluster.ScaleOpts{Boot: 1, Mails: 1, Relay: 20, Deploy: true})
+	err := c.Create(context.TODO(), cluster.ScaleOpts{Boot: 1, Mails: 1, Relay: 10, Deploy: true})
 	defer c.Clean(context.TODO())
 	require.NoError(t, err)
 	// Add two console client to cluster. Note that mailserver has to be deployed before adding clients
@@ -60,7 +60,7 @@ func TestClientsExample(t *testing.T) {
 	// TODO(dshulyak) figure out how to measure distance between two peers.
 	// one way is to get peers from one of the user and do bf search from there to second user.
 	log.Debug("started metering latency")
-	rtt.MeterFor(2 * time.Minute)
+	rtt.MeterFor(4 * time.Minute)
 	log.Info("metered rtt", "messages", rtt.Messages(),
 		"latency for 75 percentile", rtt.Percentile(75),
 		"latency for 90 percentile", rtt.Percentile(90),
