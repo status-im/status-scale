@@ -15,7 +15,7 @@ require (
 	github.com/montanaflynn/stats v0.5.0
 	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84
 	github.com/prometheus/prometheus v1.7.1-0.20170814170113-3101606756c5 // indirect
-	github.com/status-im/status-console-client v0.0.0-20190623063107-4a992229902d
+	github.com/status-im/status-console-client v0.0.0-20190701050511-1a3e62a7564f
 	github.com/status-im/status-go v0.26.0-beta.0
 	github.com/stretchr/testify v1.3.0
 )
