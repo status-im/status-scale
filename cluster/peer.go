@@ -59,7 +59,7 @@ func NewClient(config PeerConfig, backend Backend, identity *ecdsa.PrivateKey) *
 
 func NewMVDS(config PeerConfig, backend Backend, identity *ecdsa.PrivateKey) *Client {
 	return &Client{Peer: NewPeer(config, backend,
-		[]string{"status-term-client", "-mvds", "-no-ui", "-node-config", containerConfig, "-keyhex", hex.EncodeToString(crypto.FromECDSA(identity))}),
+		[]string{"status-term-client", "-ds", "-no-ui", "-node-config", containerConfig, "-keyhex", hex.EncodeToString(crypto.FromECDSA(identity))}),
 		Identity: identity,
 	}
 }

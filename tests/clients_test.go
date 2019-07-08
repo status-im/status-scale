@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/elliptic"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -14,7 +15,9 @@ import (
 	"github.com/status-im/status-scale/churn"
 	"github.com/status-im/status-scale/client"
 	"github.com/status-im/status-scale/cluster"
+	"github.com/status-im/status-scale/metrics"
 	"github.com/status-im/status-scale/utils"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,13 +32,13 @@ func TestClientsExample(t *testing.T) {
 	require.NoError(t, err)
 	// Add two console client to cluster. Note that mailserver has to be deployed before adding clients
 	// as the current client code depends on available mailservers.
-	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{Users: 2, Deploy: true}))
+	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{MVDS: 2, Deploy: true}))
 
 	var (
-		user0               = client.ChatClient(c.GetUser(0).Rpc())
-		user1               = client.ChatClient(c.GetUser(1).Rpc())
-		id0                 = c.GetUser(0).Identity
-		id1                 = c.GetUser(1).Identity
+		user0               = client.ChatClient(c.GetMVDS(0).Rpc())
+		user1               = client.ChatClient(c.GetMVDS(1).Rpc())
+		id0                 = c.GetMVDS(0).Identity
+		id1                 = c.GetMVDS(1).Identity
 		key0  hexutil.Bytes = elliptic.Marshal(crypto.S256(), id1.PublicKey.X, id1.PublicKey.Y)
 		key1  hexutil.Bytes = elliptic.Marshal(crypto.S256(), id0.PublicKey.X, id0.PublicKey.Y)
 	)
@@ -59,24 +62,37 @@ func TestClientsExample(t *testing.T) {
 	// FIXME(dshulyak) if addr is not provided comcast will use both iptables and ip6tables to insert mangle rules
 	// ip6tables fails in the container on my enviornment due to lack of kernel module
 	//require.NoError(t, c.EnableConditionsGloobally(context.TODO(), network.Options{TargetAddr: c.IPAM.String(), Latency: 50}))
-	churn := churn.NewChurnSim(c.GetUsers(), churn.Params{
+	churn := churn.NewChurnSim(c.GetMVDSClients(), churn.Params{
 		TargetAddrs: []string{c.IPAM.String()},
-		Period:      10 * time.Second,
+		Period:      60 * time.Second,
 		ChurnRate:   0.1,
 	})
+	churnCtx, cancel := context.WithCancel(context.Background())
 	go func() {
-		require.NoError(t, utils.PollImmediate(context.Background(), func(ctx context.Context) error {
+		assert.NoError(t, utils.PollImmediate(churnCtx, func(ctx context.Context) error {
 			return churn.Control(ctx)
-		}, 200*time.Millisecond, 20*time.Minute))
+		}, 200*time.Millisecond, 180*time.Minute))
+		// start all nodes after churn simulator was terminated
+		// FIXME(dshulyak) Start is confusing, it starts nodes but stops simulating networking issues
+		// need a better name
+		assert.NoError(t, churn.Start(context.Background()))
 	}()
-	rtt := client.NewRTTMeter(chat0, c.GetUser(0), c.GetUser(1))
+	rtt := client.NewRTTMeter(chat0, c.GetMVDS(0), c.GetMVDS(1))
 	// TODO(dshulyak) figure out how to measure distance between two peers.
 	// one way is to get peers from one of the user and do bf search from there to second user.
 	log.Debug("started metering latency")
-	rtt.MeterFor(1 * time.Minute)
+	rtt.MeterFor(10 * time.Minute)
+	cancel()
 	log.Info("metered rtt", "messages", rtt.Messages(),
 		"latency for 75 percentile", rtt.Percentile(75),
 		"latency for 90 percentile", rtt.Percentile(90),
 		"latency for 95 percentile", rtt.Percentile(95),
 		"latency for 99.9 percentile", rtt.Percentile(99.9))
+	table := metrics.NewCompleteTab("container name", metrics.Envelopes())
+	log.Debug("collecting metrics")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	require.NoError(t, client.CollectMetrics(ctx, table, c.GetMVDSClients(), nil))
+	cancel()
+	log.Debug("collected metrics")
+	metrics.ToASCII(table, os.Stdout).Render()
 }
