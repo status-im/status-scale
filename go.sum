@@ -565,6 +565,8 @@ github.com/status-im/status-console-client v0.0.0-20190620163944-d7abdc91a42e h1
 github.com/status-im/status-console-client v0.0.0-20190620163944-d7abdc91a42e/go.mod h1:IDGpSwdCuI5I6r+Un+WGqWOjosYD4G3th7+AmXnkkzc=
 github.com/status-im/status-console-client v0.0.0-20190623063107-4a992229902d h1:cJNeSu4e2agyHcwiVqG7+PvLc1ibg4+yXnFJSsodmLE=
 github.com/status-im/status-console-client v0.0.0-20190623063107-4a992229902d/go.mod h1:A5sTxF8edwXa28WnSGX7sOUDyCbxxBwNI+jewL0TW4k=
+github.com/status-im/status-console-client v0.0.0-20190701050511-1a3e62a7564f h1:aMurwThrPv1mYaeBsPSti7oNHV3z07xnDYolDE/tYY4=
+github.com/status-im/status-console-client v0.0.0-20190701050511-1a3e62a7564f/go.mod h1:A5sTxF8edwXa28WnSGX7sOUDyCbxxBwNI+jewL0TW4k=
 github.com/status-im/status-go v0.25.0-beta.2/go.mod h1:3ky7GKNvGXC46HmjcVnDe+3cCkzP+JTzPRz4d50AQ4w=
 github.com/status-im/status-go v0.26.0-beta.0 h1:rlXPmfTJfdIAUxxngeH6PLyNcvUlr2FJXlSFeU9IDAY=
 github.com/status-im/status-go v0.26.0-beta.0/go.mod h1:E32aONUp5RMgYADenJCyrkeV1LxFSFi6bbL1T5+qMbI=

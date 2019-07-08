@@ -2,11 +2,13 @@ package tests
 
 import (
 	"context"
+	"crypto/elliptic"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/status-im/status-console-client/protocol/gethservice"
 	"github.com/status-im/status-scale/churn"
@@ -29,26 +31,37 @@ func TestClientsExample(t *testing.T) {
 	// as the current client code depends on available mailservers.
 	require.NoError(t, c.Create(context.TODO(), cluster.ScaleOpts{Users: 2, Deploy: true}))
 
-	user0 := client.ChatClient(c.GetUser(0).Rpc())
-	user1 := client.ChatClient(c.GetUser(1).Rpc())
+	var (
+		user0               = client.ChatClient(c.GetUser(0).Rpc())
+		user1               = client.ChatClient(c.GetUser(1).Rpc())
+		id0                 = c.GetUser(0).Identity
+		id1                 = c.GetUser(1).Identity
+		key0  hexutil.Bytes = elliptic.Marshal(crypto.S256(), id1.PublicKey.X, id1.PublicKey.Y)
+		key1  hexutil.Bytes = elliptic.Marshal(crypto.S256(), id0.PublicKey.X, id0.PublicKey.Y)
+	)
 
 	name := make([]byte, 10)
 	n, err := rand.Read(name)
 	require.NoError(t, err)
 	require.Equal(t, 10, n)
-	chat := gethservice.Contact{
-		Name: hexutil.Encode(name),
+	chat0 := gethservice.Contact{
+		Name:      hexutil.Encode(name),
+		PublicKey: key1,
+	}
+	chat1 := gethservice.Contact{
+		Name:      hexutil.Encode(name),
+		PublicKey: key0,
 	}
 
-	require.NoError(t, user0.AddContact(context.TODO(), chat))
-	require.NoError(t, user1.AddContact(context.TODO(), chat))
+	require.NoError(t, user0.AddContact(context.TODO(), chat0))
+	require.NoError(t, user1.AddContact(context.TODO(), chat1))
 
 	// FIXME(dshulyak) if addr is not provided comcast will use both iptables and ip6tables to insert mangle rules
 	// ip6tables fails in the container on my enviornment due to lack of kernel module
 	//require.NoError(t, c.EnableConditionsGloobally(context.TODO(), network.Options{TargetAddr: c.IPAM.String(), Latency: 50}))
 	churn := churn.NewChurnSim(c.GetUsers(), churn.Params{
 		TargetAddrs: []string{c.IPAM.String()},
-		Period:      30 * time.Second,
+		Period:      10 * time.Second,
 		ChurnRate:   0.1,
 	})
 	go func() {
@@ -56,11 +69,11 @@ func TestClientsExample(t *testing.T) {
 			return churn.Control(ctx)
 		}, 200*time.Millisecond, 20*time.Minute))
 	}()
-	rtt := client.NewRTTMeter(chat, c.GetUser(0), c.GetUser(1))
+	rtt := client.NewRTTMeter(chat0, c.GetUser(0), c.GetUser(1))
 	// TODO(dshulyak) figure out how to measure distance between two peers.
 	// one way is to get peers from one of the user and do bf search from there to second user.
 	log.Debug("started metering latency")
-	rtt.MeterFor(4 * time.Minute)
+	rtt.MeterFor(1 * time.Minute)
 	log.Info("metered rtt", "messages", rtt.Messages(),
 		"latency for 75 percentile", rtt.Percentile(75),
 		"latency for 90 percentile", rtt.Percentile(90),
