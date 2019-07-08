@@ -16,6 +16,9 @@ func PollImmediate(parent context.Context, f func(context.Context) error, period
 	defer after.Stop()
 	for {
 		select {
+		case <-parent.Done():
+			cancel()
+			return nil
 		case <-tick.C:
 			err = f(ctx)
 			if err != nil {
@@ -23,7 +26,7 @@ func PollImmediate(parent context.Context, f func(context.Context) error, period
 			}
 		case <-after.C:
 			cancel()
-			return err
+			return nil
 		}
 	}
 	return nil

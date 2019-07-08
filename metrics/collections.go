@@ -29,3 +29,10 @@ func OnlyPeers() []interface{} {
 		RawColumn{[]string{"p2p", "Peers", "Overall"}, "p2p/peers"},
 	}
 }
+
+func Envelopes() []interface{} {
+	return []interface{}{
+		RawColumn{[]string{"whisper", "envelopeNewAdded", "Overall"}, "whisper/new envelopes"},
+		RawColumn{[]string{"whisper", "envelopeSent", "Overall"}, "whisper/sent envelopes"},
+	}
+}

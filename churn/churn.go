@@ -60,6 +60,13 @@ func (c *ChurnSim) Control(ctx context.Context) error {
 	return nil
 }
 
+func (c *ChurnSim) Start(ctx context.Context) error {
+	for i := range c.participants {
+		_ = c.start(ctx, c.participants[i])
+	}
+	return nil
+}
+
 // stop must prevent peer from receiving any traffic from peers in the same network
 func (c *ChurnSim) stop(ctx context.Context, p *cluster.Client) error {
 	return p.EnableConditions(ctx, network.Options{

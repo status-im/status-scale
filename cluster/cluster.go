@@ -253,7 +253,7 @@ func (c *Cluster) create(ctx context.Context, opts ScaleOpts) error {
 		if err != nil {
 			return err
 		}
-		p := NewClient(cfg, c.Backend, identity)
+		p := NewMVDS(cfg, c.Backend, identity)
 		log.Trace("adding mvds peer to pending", "name", cfg.Name, "ip", cfg.IP)
 		c.pending[MVDS] = append(c.pending[MVDS], p)
 	}
